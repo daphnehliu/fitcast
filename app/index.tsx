@@ -1,9 +1,15 @@
-import { Text, View, StyleSheet } from "react-native";
+import { Text, View, StyleSheet, Image } from "react-native";
+import fitcast from '../assets/images/fitcast.png'
+import { AppText } from '@/components/AppText';
 
 export default function Index() {
   return (
     <View>
-      <Text>FitCast</Text>
+      <View>
+        <AppText style={styles.headertext} type='title'>Your</AppText>
+        <Image source={fitcast} style={styles.image}/>
+      </View>
+
       <Text>Palo Alto</Text>
       <Text>72</Text>
       <Text>Clear</Text>
@@ -19,8 +25,12 @@ const styles = StyleSheet.create({
     height: 100, 
     width: 100,
   },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
+  image: {
+    width: 150, 
+    height: 150, 
+    resizeMode: "contain",
   },
+  headertext: {
+    color: '#0353A4',
+  }
 });
