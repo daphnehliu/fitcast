@@ -1,8 +1,11 @@
-import { Text, View, StyleSheet, Image } from "react-native";
+import { Text, View, StyleSheet, Image, Button} from "react-native";
 import fitcast from '../assets/images/fitcast.png'
 import { AppText } from '@/components/AppText';
+import { useRouter } from "expo-router";
 
 export default function Index() {
+  const router = useRouter();
+
   return (
     <View>
       <View>
@@ -15,6 +18,7 @@ export default function Index() {
       <Text>Clear</Text>
       <Text>High: 75 | Low: 70</Text>
       <View style={styles.box}/>
+      <Button title="View Timeline" onPress={() => router.push("/timeline")} />
     </View>
   );
 }
