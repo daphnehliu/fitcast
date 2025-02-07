@@ -102,7 +102,7 @@ export default function Index() {
             <Text style={styles.fitcastDescriptionText}>
               Dress light, but pack warm clothes for later.
             </Text>
-            <Text>
+            <Text style={{color: 'white'}}>
               You typically feel hot in these conditions. Later, it will cool
               down and rain.
             </Text>
@@ -124,12 +124,13 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
+    // alignItems: "center",
   },
   header: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     padding: 20,
+    flex: 0.2,
   },
   image: {
     width: 150,
@@ -142,12 +143,12 @@ const styles = StyleSheet.create({
     color: "#0353A4",
     fontSize: 37,
     height: 50,
-    textAlign: "center",
-    alignItems: "center",
+    // textAlign: "center",
+    // alignItems: "center",
   },
   weatherBox: {
     alignItems: "center",
-    padding: 50,
+    paddingBottom: 20,
   },
   locationText: {
     fontSize: 25,
@@ -160,17 +161,20 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   fitcastBox: {
-    height: 150,
+    height: 300,
     width: 375,
     alignItems: "center",
     margin: 14,
+    flex: 3,
   },
   fitcastBoxLight: {
-    width: 375,
+    height: 200,
+    width: '95%',
     backgroundColor: "#B9D6F2",
     alignItems: "center",
     borderRadius: 15,
     paddingBottom: 10,
+    marginBottom: 10,
   },
   fitcastLabel: {
     flexDirection: "row",
@@ -178,14 +182,18 @@ const styles = StyleSheet.create({
   fitcastDescription: {
     backgroundColor: "#0353A4",
     color: "white",
-    height: 70,
-    width: 375,
     borderRadius: 10,
     padding: 10,
+    height: 150,
+    width: '95%',
+
   },
   fitcastDescriptionText: {
     color: "white",
-    margin: 1,
+    marginBottom: 10,
+    fontStyle: 'italic',
     textAlign: "center",
   },
 });
+
+// perfect zone at each time of year
