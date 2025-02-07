@@ -1,10 +1,38 @@
 import { Text, View, StyleSheet, Image, Button } from "react-native";
 import fitcast from "../assets/images/fitcast.png";
+import pants from "../assets/images/pants.png";
+import jacket from "../assets/images/jacket.png";
 import { AppText } from "@/components/AppText";
 import { useRouter } from "expo-router";
+import React, { useState, useEffect } from "react";
 
 export default function Index() {
   const router = useRouter();
+  const [weather, setWeather] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const apiKey = "f076a815a1cbbdb3f228968604fdcc7a";
+        const response = await fetch(
+          `http://api.openweathermap.org/data/2.5/weather?q=Palo%20Alto&appid=${apiKey}&units=imperial`
+        );
+        const data = await response.json();
+        setWeather(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchWeather();
+  }, []);
+
+  if (!weather) return <Text>Loading...</Text>;
+
+  const currentTemp = Math.round(weather.main.temp);
+  const tempHigh = Math.round(weather.main.temp_max);
+  const tempLow = Math.round(weather.main.temp_min);
+  const weatherDesc = weather.weather[0].description;
 
   return (
     <View>
@@ -17,25 +45,36 @@ export default function Index() {
 
       <View style={styles.weatherBox}>
         <Text style={styles.locationText}>Palo Alto, CA</Text>
-        <Text style={styles.tempText}>72º</Text>
-        <Text style={styles.weatherDetailsText}>Clear</Text>
-        <Text>High: 75 | Low: 70</Text>
+        <Text style={styles.tempText}>{currentTemp}º</Text>
+        <Text>{weatherDesc}</Text>
+        <Text>
+          High: {tempHigh}º | Low: {tempLow}º
+        </Text>
       </View>
       <View style={styles.fitcastBox}>
         <View style={styles.fitcastBoxLight}>
           <View style={styles.fitcastLabel}>
-            <Text style={styles.weatherDetailsText}>Now: dress light</Text>
-            <Text style={styles.weatherDetailsText}>Later: layer up</Text>
-          </View>
+            <View>
+              <Text style={styles.weatherDetailsText}>Now: dress light</Text>
+              <Image source={jacket} style={styles.image} />
+              <Image source={pants} style={styles.image} />
+            </View>
 
-          <View>
-            <Text style={styles.weatherDetailsText}>images</Text>
+            <View>
+              <Text style={styles.weatherDetailsText}>Later: layer up</Text>
+              <Image source={jacket} style={styles.image} />
+              <Image source={pants} style={styles.image} />
+            </View>
           </View>
         </View>
 
         <View style={styles.fitcastDescription}>
           <Text style={styles.fitcastDescriptionText}>
-            Dress light but layer up for later
+            Dress light, but pack warm clothes for later.
+          </Text>
+          <Text>
+            You typically feel hot in these conditions. Later, it will cool down
+            and rain.
           </Text>
         </View>
         <Button
@@ -79,7 +118,7 @@ const styles = StyleSheet.create({
   },
   weatherDetailsText: {
     fontSize: 20,
-    flex: 1,
+    padding: 10,
   },
   fitcastBox: {
     height: 150,
@@ -88,9 +127,11 @@ const styles = StyleSheet.create({
     margin: 14,
   },
   fitcastBoxLight: {
+    width: 375,
     backgroundColor: "#B9D6F2",
     alignItems: "center",
     borderRadius: 15,
+    paddingBottom: 10,
   },
   fitcastLabel: {
     flexDirection: "row",
@@ -98,12 +139,14 @@ const styles = StyleSheet.create({
   fitcastDescription: {
     backgroundColor: "#0353A4",
     color: "white",
-    height: 30,
+    height: 70,
     width: 375,
     borderRadius: 10,
+    padding: 10,
   },
   fitcastDescriptionText: {
     color: "white",
     margin: 1,
+    textAlign: "center",
   },
 });
