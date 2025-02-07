@@ -73,25 +73,25 @@ export default function Index() {
         </View>
 
         <View style={styles.weatherBox}>
-          <Text style={styles.locationText}>Palo Alto, CA</Text>
-          <Text style={styles.tempText}>{currentTemp}º</Text>
-          <Text>{weatherDesc}</Text>
-          <Text>
+          <AppText style={styles.locationText}>Palo Alto, CA</AppText>
+          <AppText style={styles.tempText}>{currentTemp}º</AppText>
+          <AppText type="caption">{weatherDesc}</AppText>
+          <AppText>
             High: {tempHigh}º | Low: {tempLow}º
-          </Text>
+          </AppText>
         </View>
 
         <View style={styles.fitcastBox}>
           <View style={styles.fitcastBoxLight}>
             <View style={styles.fitcastLabel}>
               <View>
-                <Text style={styles.weatherDetailsText}>Now: dress light</Text>
+                <AppText style={styles.weatherDetailsText}>Now: dress light</AppText>
                 <Image source={jacket} style={styles.image} />
                 <Image source={pants} style={styles.image} />
               </View>
 
               <View>
-                <Text style={styles.weatherDetailsText}>Later: layer up</Text>
+                <AppText style={styles.weatherDetailsText}>Later: layer up</AppText>
                 <Image source={jacket} style={styles.image} />
                 <Image source={pants} style={styles.image} />
               </View>
@@ -99,13 +99,13 @@ export default function Index() {
           </View>
 
           <View style={styles.fitcastDescription}>
-            <Text style={styles.fitcastDescriptionText}>
+            <AppText style={styles.fitcastDescriptionText} type='italic'>
               Dress light, but pack warm clothes for later.
-            </Text>
-            <Text style={{color: 'white'}}>
+            </AppText>
+            <AppText style={{color: 'white', marginLeft: 8}} type='caption'>
               You typically feel hot in these conditions. Later, it will cool
               down and rain.
-            </Text>
+            </AppText>
           </View>
           <Button
             title="View Timeline"
@@ -124,13 +124,12 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: "center",
-    // alignItems: "center",
   },
   header: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "flex-end",
     padding: 20,
-    flex: 0.2,
+    gap: 10,
   },
   image: {
     width: 150,
@@ -138,26 +137,20 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
   headertext: {
-    paddingTop: 25,
-    paddingRight: 6,
     color: "#0353A4",
-    fontSize: 37,
-    height: 50,
-    // textAlign: "center",
-    // alignItems: "center",
+    marginBottom: -10,
   },
   weatherBox: {
     alignItems: "center",
-    paddingBottom: 20,
+    padding: 20,
   },
   locationText: {
-    fontSize: 25,
+    fontSize: 24,
   },
   tempText: {
     fontSize: 100,
   },
   weatherDetailsText: {
-    fontSize: 20,
     padding: 10,
   },
   fitcastBox: {
@@ -183,7 +176,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#0353A4",
     color: "white",
     borderRadius: 10,
-    padding: 10,
+    padding: 16,
     height: 150,
     width: '95%',
 
@@ -191,9 +184,6 @@ const styles = StyleSheet.create({
   fitcastDescriptionText: {
     color: "white",
     marginBottom: 10,
-    fontStyle: 'italic',
-    textAlign: "center",
   },
 });
 
-// perfect zone at each time of year
