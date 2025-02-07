@@ -85,13 +85,17 @@ export default function Index() {
           <View style={styles.fitcastBoxLight}>
             <View style={styles.fitcastLabel}>
               <View>
-                <AppText style={styles.weatherDetailsText}>Now: dress light</AppText>
+                <AppText style={styles.weatherDetailsText}>
+                  Now: dress light
+                </AppText>
                 <Image source={jacket} style={styles.image} />
                 <Image source={pants} style={styles.image} />
               </View>
 
               <View>
-                <AppText style={styles.weatherDetailsText}>Later: layer up</AppText>
+                <AppText style={styles.weatherDetailsText}>
+                  Later: layer up
+                </AppText>
                 <Image source={jacket} style={styles.image} />
                 <Image source={pants} style={styles.image} />
               </View>
@@ -99,10 +103,10 @@ export default function Index() {
           </View>
 
           <View style={styles.fitcastDescription}>
-            <AppText style={styles.fitcastDescriptionText} type='italic'>
+            <AppText style={styles.fitcastDescriptionText} type="italic">
               Dress light, but pack warm clothes for later.
             </AppText>
-            <AppText style={{color: 'white', marginLeft: 8}} type='caption'>
+            <AppText style={{ color: "white", marginLeft: 8 }} type="caption">
               You typically feel hot in these conditions. Later, it will cool
               down and rain.
             </AppText>
@@ -162,7 +166,7 @@ const styles = StyleSheet.create({
   },
   fitcastBoxLight: {
     height: 200,
-    width: '95%',
+    width: "95%",
     backgroundColor: "#B9D6F2",
     alignItems: "center",
     borderRadius: 15,
@@ -178,12 +182,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 16,
     height: 150,
-    width: '95%',
-
+    width: "95%",
   },
   fitcastDescriptionText: {
     color: "white",
     marginBottom: 10,
   },
 });
-
