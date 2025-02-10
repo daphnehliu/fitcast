@@ -1,15 +1,18 @@
 import { Text, View, StyleSheet, Image, Button } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import fitcast from "../assets/images/fitcast.png";
-import pants from "../assets/images/pants.png";
-import jacket from "../assets/images/jacket.png";
 import { AppText } from "@/components/AppText";
 import { useRouter } from "expo-router";
 import React, { useState, useEffect } from "react";
 
 export default function Index() {
   const router = useRouter();
-  const [weather, setWeather] = useState(null);
+  const [weather, setWeather] = useState<any>(null);
+  const [isNight, setIsNight] = useState(false);
+  const [weatherDesc, setWeatherDesc] = useState("");
+
+  const jacket = require("../assets/images/jacket.png");
+  const pants = require("../assets/images/pants.png");
+  const fitcast = require("../assets/images/fitcastWhite.png");
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -20,6 +23,16 @@ export default function Index() {
         );
         const data = await response.json();
         setWeather(data);
+
+        const currentHour = new Date().getHours();
+        setIsNight(currentHour < 6 || currentHour > 18);
+        setWeatherDesc(
+          (data.weather[0].description as string)
+            .toLowerCase()
+            .split(" ")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ")
+        );
       } catch (error) {
         console.error(error);
       }
@@ -33,30 +46,20 @@ export default function Index() {
   const currentTemp = Math.round(weather.main.temp);
   const tempHigh = Math.round(weather.main.temp_max);
   const tempLow = Math.round(weather.main.temp_min);
-  const weatherDesc = weather.weather[0].description;
 
-  const getGradientColors = () => {
-    const hour = new Date().getHours();
-    const isNight = hour < 6 || hour > 18;
-
-    if (!weather || !weather.weather) return ["#4DC8E7", "#B0E7F0"];
-
-    const weatherDesc = weather.weather[0].description.toLowerCase();
+  const getGradientColors = (): [string, string, ...string[]] => {
+    if (!weatherDesc) return ["#4DC8E7", "#B0E7F0"];
 
     if (weatherDesc.includes("clear")) {
-      return isNight ? ["#0B1A42", "#2E4B7A"] : ["#4DC8E7", "#B0E7F0"];
+      return isNight ? ["#0B1A42", "#2E4B7A"] : ["#4D92D9", "#B0E7F0"];
     } else if (weatherDesc.includes("cloud")) {
-      return isNight ? ["#2F3E46", "#4B6584"] : ["#BCCCDC", "#90A4AE"];
-    } else if (weatherDesc.includes("rain")) {
-      return isNight ? ["#1B262C", "#0F4C75"] : ["#5D737E", "#7DA3A1"];
+      return isNight ? ["#2F3E46", "#4B6584"] : ["#B0B0B0", "#90A4AE"];
+    } else if (weatherDesc.includes("rain") || weatherDesc.includes("snow")) {
+      return isNight ? ["#1B262C", "#0F4C75"] : ["#A0ADB9", "#697582"];
     } else if (weatherDesc.includes("thunderstorm")) {
       return ["#1F1C2C", "#928DAB"];
-    } else if (weatherDesc.includes("snow")) {
-      return ["#E0EAF3", "#B0C4DE"];
-    } else if (hour >= 5 && hour <= 7) {
-      return ["#FF9A8B", "#FF6A88", "#FF99AC"];
-    } else if (hour >= 18 && hour <= 20) {
-      return ["#FDB813", "#FD5E53"];
+    } else if (isNight) {
+      return ["#0B1A42", "#2E4B7A"];
     }
 
     return ["#4DC8E7", "#B0E7F0"];
@@ -66,7 +69,7 @@ export default function Index() {
     <LinearGradient colors={getGradientColors()} style={styles.gradient}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <AppText style={styles.headertext} type="title">
+          <AppText type="title" style={[styles.headertext]}>
             Your
           </AppText>
           <Image source={fitcast} style={styles.image} />
@@ -75,8 +78,8 @@ export default function Index() {
         <View style={styles.weatherBox}>
           <AppText style={styles.locationText}>Palo Alto, CA</AppText>
           <AppText style={styles.tempText}>{currentTemp}º</AppText>
-          <AppText type="caption">{weatherDesc}</AppText>
-          <AppText>
+          <AppText style={{ color: "white" }}>{weatherDesc}</AppText>
+          <AppText style={{ color: "white" }}>
             High: {tempHigh}º | Low: {tempLow}º
           </AppText>
         </View>
@@ -102,11 +105,19 @@ export default function Index() {
             </View>
           </View>
 
-          <View style={styles.fitcastDescription}>
+          <View
+            style={[
+              styles.fitcastDescription,
+              { backgroundColor: isNight ? "#1E1E1E" : "#0353A4" },
+            ]}
+          >
             <AppText style={styles.fitcastDescriptionText} type="italic">
               Dress light, but pack warm clothes for later.
             </AppText>
-            <AppText style={{ color: "white", marginLeft: 8 }} type="caption">
+            <AppText
+              style={{ color: "white", marginLeft: 8, marginRight: 10 }}
+              type="caption"
+            >
               You typically feel hot in these conditions. Later, it will cool
               down and rain.
             </AppText>
@@ -127,7 +138,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: "center",
   },
   header: {
     flexDirection: "row",
@@ -141,8 +151,8 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
   headertext: {
-    color: "#0353A4",
     marginBottom: -10,
+    color: "white",
   },
   weatherBox: {
     alignItems: "center",
@@ -150,12 +160,15 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 24,
+    color: "white",
   },
   tempText: {
     fontSize: 100,
+    color: "white",
   },
   weatherDetailsText: {
     padding: 10,
+    color: "white",
   },
   fitcastBox: {
     height: 300,
@@ -167,10 +180,10 @@ const styles = StyleSheet.create({
   fitcastBoxLight: {
     height: 200,
     width: "95%",
-    backgroundColor: "#B9D6F2",
+    backgroundColor: "rgba(185, 214, 242, 0.5)",
     alignItems: "center",
     borderRadius: 15,
-    paddingBottom: 10,
+    padding: 10,
     marginBottom: 10,
   },
   fitcastLabel: {
@@ -181,11 +194,14 @@ const styles = StyleSheet.create({
     color: "white",
     borderRadius: 10,
     padding: 16,
-    height: 150,
+    height: 120,
     width: "95%",
   },
   fitcastDescriptionText: {
     color: "white",
     marginBottom: 10,
+  },
+  button: {
+    marginTop: 10,
   },
 });
