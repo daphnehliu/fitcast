@@ -4,11 +4,39 @@ import { AppText } from "@/components/AppText";
 import { useRouter } from "expo-router";
 import React, { useState, useEffect } from "react";
 
+const getGradientColors = (
+  weatherDesc: string,
+  isNight: boolean
+): [string, string, ...string[]] => {
+  if (!weatherDesc) return ["#4DC8E7", "#B0E7F0"];
+
+  if (weatherDesc.includes("clear")) {
+    return isNight ? ["#0B1A42", "#2E4B7A"] : ["#4D92D9", "#B0E7F0"];
+  } else if (weatherDesc.includes("cloud")) {
+    return isNight ? ["#2F3E46", "#4B6584"] : ["#B0B0B0", "#90A4AE"];
+  } else if (weatherDesc.includes("rain") || weatherDesc.includes("snow")) {
+    return isNight ? ["#1B262C", "#0F4C75"] : ["#A0ADB9", "#697582"];
+  } else if (weatherDesc.includes("thunderstorm")) {
+    return ["#1F1C2C", "#928DAB"];
+  } else if (isNight) {
+    return ["#0B1A42", "#2E4B7A"];
+  }
+
+  return ["#4DC8E7", "#B0E7F0"];
+};
+
 export default function Index() {
   const router = useRouter();
   const [weather, setWeather] = useState<any>(null);
   const [isNight, setIsNight] = useState(false);
   const [weatherDesc, setWeatherDesc] = useState("");
+  const [gradientColors, setGradientColors] = useState<
+    [string, string, ...string[]]
+  >(["#4DC8E7", "#B0E7F0"]);
+
+  useEffect(() => {
+    setGradientColors(getGradientColors(weatherDesc, isNight));
+  }, [weatherDesc, isNight]);
 
   const jacket = require("../assets/images/jacket.png");
   const pants = require("../assets/images/pants.png");
@@ -47,26 +75,8 @@ export default function Index() {
   const tempHigh = Math.round(weather.main.temp_max);
   const tempLow = Math.round(weather.main.temp_min);
 
-  const getGradientColors = (): [string, string, ...string[]] => {
-    if (!weatherDesc) return ["#4DC8E7", "#B0E7F0"];
-
-    if (weatherDesc.includes("clear")) {
-      return isNight ? ["#0B1A42", "#2E4B7A"] : ["#4D92D9", "#B0E7F0"];
-    } else if (weatherDesc.includes("cloud")) {
-      return isNight ? ["#2F3E46", "#4B6584"] : ["#B0B0B0", "#90A4AE"];
-    } else if (weatherDesc.includes("rain") || weatherDesc.includes("snow")) {
-      return isNight ? ["#1B262C", "#0F4C75"] : ["#A0ADB9", "#697582"];
-    } else if (weatherDesc.includes("thunderstorm")) {
-      return ["#1F1C2C", "#928DAB"];
-    } else if (isNight) {
-      return ["#0B1A42", "#2E4B7A"];
-    }
-
-    return ["#4DC8E7", "#B0E7F0"];
-  };
-
   return (
-    <LinearGradient colors={getGradientColors()} style={styles.gradient}>
+    <LinearGradient colors={gradientColors} style={styles.gradient}>
       <View style={styles.content}>
         <View style={styles.header}>
           <AppText type="title" style={[styles.headertext]}>
