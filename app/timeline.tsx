@@ -2,12 +2,6 @@ import React, { useRef, useState } from "react";
 import { View, Text, Image, Dimensions, ScrollView } from "react-native";
 import Slider from "@react-native-community/slider";
 import GradientBackground from "@/components/GradientBackground";
-import stormi from "../assets/images/stormi.png";
-import stump from "../assets/images/stump.png";
-import jacket from "../assets/images/jacket.png";
-import pants from "../assets/images/pants.png";
-import shirt from "../assets/images/t-shirt.png";
-import umbrella from "../assets/images/umbrella.png";
 
 const { width, height } = Dimensions.get("window");
 
@@ -15,16 +9,22 @@ function Timeline() {
   const [sliderValue, setSliderValue] = useState(0); // Tracks slider position
   const timelineHeight = height * 0.95;
 
+  const stormi = require("../assets/images/stormi.png");
+  const stump = require("../assets/images/stump.png");
+  const jacket = require("../assets/images/jacket.png");
+  const pants = require("../assets/images/pants.png");
+  const shirt = require("../assets/images/t-shirt.png");
+  const umbrella = require("../assets/images/umbrella.png");
+
   return (
     <GradientBackground
-      colors={["#4DC8E7", "#B0E7F0", "#FAFCA9"]}
-      locations={[0.17, 0.65, 0.99]}
+      colors={["rgba(255, 222, 47, 0.26)", "#B0E7F0", "rgba(39, 91, 224, 0.3)"]}
+      locations={[0.05, 0.3, 0.8]}
     >
       <View style={styles.fit}>
         <Image source={stump} style={styles.stump} />
         <Image source={stormi} style={styles.stormi} />
       </View>
-      {/* Scrollable Timeline */}
       <View style={styles.timeline}>
         <Slider
           style={styles.slider}
@@ -34,7 +34,6 @@ function Timeline() {
           maximumTrackTintColor="#808080"
           vertical={true}
         />
-        {/* Time labels positioned dynamically */}
         {[
           { time: "9AM", top: 0.11 },
           { time: "12PM", top: 0.41 },
@@ -47,8 +46,6 @@ function Timeline() {
             <Text style={styles.timeLabel}>{label.time}</Text>
           </View>
         ))}
-
-        {/* Icons positioned dynamically */}
         {[
           { icons: [shirt, pants], top: 0.1 },
           { icons: [jacket, pants, umbrella], top: 0.4 },
@@ -115,7 +112,6 @@ const styles = StyleSheet.create({
     paddingRight: 8, // Adjust right padding
   },
   timeLabel: {
-    color: "#FFFFFF",
     fontSize: 14,
     marginBottom: 5,
   },
