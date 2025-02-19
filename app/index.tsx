@@ -136,6 +136,10 @@ export default function Index() {
             title="View Timeline"
             onPress={() => router.push("/timeline")}
           />
+          <Button
+            title="View Packing"
+            onPress={() => router.push("/packing/packing")}
+          />
         </View>
       </View>
     </LinearGradient>
