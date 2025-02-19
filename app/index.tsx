@@ -44,8 +44,7 @@ export default function Index() {
   // If there's no session, show the authentication screen with a skip option
   if (!session) {
     return <Auth onSkip={() => {
-      // Here, you could either set a dummy session, or set a flag that indicates "skip"
-      // For this example, we'll simulate a session with a dummy user id.
+      // dummy skip user id
       setSession({ user: { id: 'skip-user' } } as Session);
     }} />;
   }
