@@ -4,6 +4,7 @@ import { AppText } from "@/components/AppText";
 import { useRouter } from "expo-router";
 import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import NavBar from "@/components/NavBar";
 import { Session } from "@supabase/supabase-js";
 
 const OPENAI_API_KEY = ""
@@ -13,7 +14,7 @@ const getGradientColors = (
   isNight: boolean
 ): [string, string, ...string[]] => {
   if (!weatherDesc) return ["#4DC8E7", "#B0E7F0"];
-
+``
   if (weatherDesc.includes("Clear")) {
     return isNight ? ["#0B1A42", "#2E4B7A"] : ["#4D92D9", "#B0E7F0"];
   } else if (weatherDesc.includes("Cloud")) {
@@ -27,6 +28,7 @@ const getGradientColors = (
   }
 
   return ["#4DC8E7", "#B0E7F0"];
+  
 };
 
 export default function Home({ session }: { session: Session }) {
@@ -189,7 +191,6 @@ export default function Home({ session }: { session: Session }) {
   return (
     <LinearGradient colors={gradientColors} style={styles.gradient}>
       <View style={styles.content}>
-        <AppText style={{ color: "white" }}>Hello, {username}!</AppText>
         <View style={styles.header}>
           <AppText type="title" style={[styles.headertext]}>
             Your
@@ -243,20 +244,9 @@ export default function Home({ session }: { session: Session }) {
               {fitcastDescription}
             </AppText>
           </View>
-          <Button
-            title="View Timeline"
-            onPress={() => router.push("/timeline")}
-          />
-          <Button
-            title="View Packing"
-            onPress={() => router.push("/packing/packing")}
-          />
-          <Button
-            title="View Profile"
-            onPress={() => router.push("/profile")}
-          />
         </View>
       </View>
+      <NavBar />
     </LinearGradient>
   );
 }
@@ -264,6 +254,19 @@ export default function Home({ session }: { session: Session }) {
 const styles = StyleSheet.create({
   gradient: {
     flex: 1,
+  },
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  logoutButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 100, 
   },
   content: {
     flex: 1,
@@ -282,6 +285,12 @@ const styles = StyleSheet.create({
   headertext: {
     marginBottom: -10,
     color: "white",
+  },
+  userText: {
+    fontSize: 22, 
+    fontWeight: "bold", 
+    color: "white", 
+    fontFamily: "System", 
   },
   weatherBox: {
     alignItems: "center",
