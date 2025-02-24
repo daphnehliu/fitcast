@@ -1,65 +1,102 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { View, Text, Image, Dimensions, ScrollView } from "react-native";
 import Slider from "@react-native-community/slider";
 import GradientBackground from "@/components/GradientBackground";
+import { AppText } from "@/components/AppText";
 
 const { width, height } = Dimensions.get("window");
 
 function Timeline() {
-  const [sliderValue, setSliderValue] = useState(0); // Tracks slider position
-  const timelineHeight = height * 0.95;
+  const [sliderValue, setSliderValue] = useState(0);
+  const [gradientColors, setGradientColors] = useState([
+    "rgba(255, 222, 47, 0.26)",
+    "#B0E7F0",
+    "rgba(39, 91, 224, 0.3)",
+  ]);
+  const scrollViewRef = useRef(null);
+  const groupCount = 3;
+  const timelineWidth = width * groupCount;
 
-  const stormi = require("../assets/images/stormi.png");
-  const stump = require("../assets/images/stump.png");
   const jacket = require("../assets/images/jacket.png");
   const pants = require("../assets/images/pants.png");
   const shirt = require("../assets/images/t-shirt.png");
   const umbrella = require("../assets/images/umbrella.png");
 
+  const iconGroups = [
+    { icons: [shirt, pants] },
+    { icons: [jacket, pants, umbrella] },
+    { icons: [jacket, pants, umbrella] },
+  ];
+
+  useEffect(() => {
+    const groupIndex = Math.round(sliderValue * (groupCount - 1));
+    const scrollX = groupIndex * width;
+
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ x: scrollX, animated: true });
+    }
+
+    if (groupIndex === 0) {
+      setGradientColors([
+        "rgba(255, 183, 77, 0.8)",
+        "rgba(255, 244, 214, 0.9)",
+        "#4D92D9",
+      ]);
+    } else if (groupIndex === 1) {
+      setGradientColors(["#4D92D9", "#4D92D9", "#4D92D9"]);
+    } else {
+      setGradientColors(["#4D92D9", "rgba(250, 159, 22, 0.8)", "#0B1A4"]);
+    }
+  }, [sliderValue]);
+
   return (
     <GradientBackground
-      colors={["rgba(255, 222, 47, 0.26)", "#B0E7F0", "rgba(39, 91, 224, 0.3)"]}
-      locations={[0.05, 0.3, 0.8]}
+      colors={gradientColors}
+      locations={[0.05, 0.5, 0.95]}
+      style={{ display: "flex", justifyContent: "center" }}
     >
-      <View style={styles.fit}>
-        <Image source={stump} style={styles.stump} />
-        <Image source={stormi} style={styles.stormi} />
-      </View>
-      <View style={styles.timeline}>
+      <View
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "60%",
+        }}
+      >
+        <ScrollView
+          style={styles.outfitContainer}
+          ref={scrollViewRef}
+          horizontal
+          scrollEnabled={false}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ width: timelineWidth }}
+        >
+          {iconGroups.map((group, index) => (
+            <View
+              key={index}
+              style={[styles.iconGroup, { width, justifyContent: "center" }]}
+            >
+              {group.icons.map((icon, idx) => (
+                <Image key={idx} source={icon} style={styles.icon} />
+              ))}
+            </View>
+          ))}
+        </ScrollView>
         <Slider
           style={styles.slider}
           minimumValue={0}
           maximumValue={1}
+          step={1 / (groupCount - 1)}
           minimumTrackTintColor="#FFFFFF"
           maximumTrackTintColor="#808080"
-          vertical={true}
+          value={sliderValue}
+          onValueChange={setSliderValue}
         />
-        {[
-          { time: "9AM", top: 0.11 },
-          { time: "12PM", top: 0.41 },
-          { time: "9PM", top: 0.71 },
-        ].map((label, index) => (
-          <View
-            key={index}
-            style={[styles.timeLabels, { top: timelineHeight * label.top }]}
-          >
-            <Text style={styles.timeLabel}>{label.time}</Text>
-          </View>
-        ))}
-        {[
-          { icons: [shirt, pants], top: 0.1 },
-          { icons: [jacket, pants, umbrella], top: 0.4 },
-          { icons: [jacket, pants, umbrella], top: 0.7 },
-        ].map((group, index) => (
-          <View
-            key={index}
-            style={[styles.iconContainer, { top: timelineHeight * group.top }]}
-          >
-            {group.icons.map((icon, idx) => (
-              <Image key={idx} source={icon} style={styles.icon} />
-            ))}
-          </View>
-        ))}
+        <View style={styles.timeLabelsContainer}>
+          <AppText style={styles.timeLabel}>9 AM</AppText>
+          <AppText style={styles.timeLabel}>12 PM</AppText>
+          <AppText style={styles.timeLabel}>9 PM</AppText>
+        </View>
       </View>
     </GradientBackground>
   );
@@ -68,63 +105,38 @@ function Timeline() {
 import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
-  fit: {
-    flex: 1,
-    alignItems: "center", // Centers images horizontally
-  },
-  stormi: {
-    height: "48%", // Set custom height
-    resizeMode: "contain", // Ensures the image fits inside dimensions without cropping
-    position: "absolute", // Allows manual positioning
-    bottom: 280, // Moves it down from the top
-    left: 40, // Moves it slightly to the right
-  },
-  stump: {
-    height: "50%",
-    resizeMode: "contain",
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-  },
-  timeline: {
-    width: "50%", // 50% of screen width
-    height: "95%", // Full screen height
-    backgroundColor: "rgba(255, 255, 255, 0.5)", // Optional background for visibility
-    position: "absolute",
-    right: 0, // Align to the right
-    top: 0, // Align to the top
-    margin: 15,
+  outfitContainer: {
+    width: "100%",
+    backgroundColor: "rgba(255, 255, 255, 0.5)",
     borderRadius: 25,
-    justifyContent: "center", // Center the slider within the View
-    alignItems: "center", // Center the slider within the View
+    padding: 10,
   },
   slider: {
-    marginTop: 0,
-    width: height * 0.8 * (1 / 0.75),
+    width: width * 0.9,
     height: 20,
-    marginLeft: 100,
-    transform: [{ rotate: "90deg" }, { scaleX: 0.75 }, { scaleY: 0.75 }],
+    marginTop: 20,
   },
-  timeLabels: {
-    position: "absolute",
-    width: "100%",
-    alignItems: "flex-end",
-    paddingRight: 8, // Adjust right padding
-  },
-  timeLabel: {
-    fontSize: 14,
-    marginBottom: 5,
-  },
-  iconContainer: {
-    flexDirection: "row", // Align icons horizontally
+  iconGroup: {
+    flexDirection: "column",
     alignItems: "center",
-    position: "absolute", // Allows manual positioning of icons
-    left: "2%",
+    justifyContent: "center",
   },
   icon: {
-    height: 38,
-    width: 41,
-    margin: 2,
+    height: 80,
+    width: 100,
+    margin: 10,
+  },
+  timeLabelsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: width * 0.9,
+    paddingHorizontal: 10,
+    marginTop: 10,
+  },
+  timeLabel: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "bold",
   },
 });
 
