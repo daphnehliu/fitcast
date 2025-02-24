@@ -1,11 +1,11 @@
 // index.tsx
-import 'react-native-url-polyfill/auto';
-import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import { supabase } from '../lib/supabase';
-import Auth from '../components/Auth';
-import Home from './home';
-import { Session } from '@supabase/supabase-js';
+import "react-native-url-polyfill/auto";
+import React, { useState, useEffect } from "react";
+import { View, ActivityIndicator } from "react-native";
+import { supabase } from "../lib/supabase";
+import Auth from "../components/Auth";
+import Home from "./home";
+import { Session } from "@supabase/supabase-js";
 
 export default function Index() {
   const [session, setSession] = useState<Session | null>(null);
@@ -13,12 +13,12 @@ export default function Index() {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(
-      ({ data: { session } }: { data: { session: Session | null } }) => {
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }: { data: { session: Session | null } }) => {
         setSession(session);
         setLoading(false);
-      }
-    );
+      });
 
     // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -35,7 +35,7 @@ export default function Index() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator size="large" />
       </View>
     );
@@ -43,10 +43,14 @@ export default function Index() {
 
   // If there's no session, show the authentication screen with a skip option
   if (!session) {
-    return <Auth onSkip={() => {
-      // dummy skip user id
-      setSession({ user: { id: 'skip-user' } } as Session);
-    }} />;
+    return (
+      <Auth
+        onSkip={() => {
+          // dummy skip user id
+          setSession({ user: { id: "skip-user" } } as Session);
+        }}
+      />
+    );
   }
 
   // If logged in, show the Home screen

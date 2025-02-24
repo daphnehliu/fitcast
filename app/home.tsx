@@ -3,11 +3,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import { AppText } from "@/components/AppText";
 import { useRouter } from "expo-router";
 import React, { useState, useEffect } from "react";
-import { supabase } from '../lib/supabase';
+import { supabase } from "../lib/supabase";
 
+// const OPENAI_API_KEY = ...
 type HomeProps = {
-    userId: string;
-  };
+  userId: string;
+};
 
 const getGradientColors = (
   weatherDesc: string,
@@ -38,11 +39,13 @@ export default function Home({ userId }: HomeProps) {
   const [gradientColors, setGradientColors] = useState<
     [string, string, ...string[]]
   >(["#4DC8E7", "#B0E7F0"]);
+  const [fitcastDescription, setFitcastDescription] = useState("Loading...");
+  const [fitcastLabel, setFitcastLabel] = useState("Loading...");
 
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
     if (error) {
-      Alert.alert('Logout error', error.message);
+      Alert.alert("Logout error", error.message);
     }
     // Depending on your app's setup, you might want to do additional state updates or navigation here.
   }
@@ -67,20 +70,121 @@ export default function Home({ userId }: HomeProps) {
 
         const currentHour = new Date().getHours();
         setIsNight(currentHour < 6 || currentHour > 18);
-        setWeatherDesc(
-          (data.weather[0].description as string)
-            .toLowerCase()
-            .split(" ")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ")
+        const formattedDesc = data.weather[0].description
+          .toLowerCase()
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+        setWeatherDesc(formattedDesc);
+
+        getFitcastLabel(
+          formattedDesc,
+          data.main.temp,
+          data.main.temp_max,
+          data.main.temp_min
+        );
+        getFitcastDescription(
+          formattedDesc,
+          data.main.temp,
+          data.main.temp_max,
+          data.main.temp_min,
+          fitcastLabel
         );
       } catch (error) {
-        console.error(error);
+        console.error("Error fetching weather: ", error);
       }
     };
 
     fetchWeather();
   }, []);
+
+  const getFitcastLabel = async (
+    description: string,
+    temp: number,
+    high: number,
+    low: number
+  ) => {
+    try {
+      const prompt = `The current weather is described as "${description}". The temperature is ${temp}ºF, with 
+      a high of ${high}ºF and a low of ${low}ºF. Provide a short clothing recommendation including specific 
+      pieces of clothing to prepare for the weather. Don't give any reasoning and don't add any stylistic elements.
+      Something like "Dress light with a short sleeve shirt and pants" or "Bundle up with a big jacket" ia great. Use 10 or less tokens.`;
+
+      const response = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "system",
+                content: "You are a weather fashion assistant.",
+              },
+              { role: "user", content: prompt },
+            ],
+            max_tokens: 10,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      console.log(data);
+      setFitcastLabel(data.choices[0].message.content.trim());
+      console.log(fitcastLabel);
+    } catch (error) {
+      console.error("Error fetching OpenAI response:", error);
+      setFitcastLabel("Unable to generate fitcast advice.");
+    }
+  };
+
+  const getFitcastDescription = async (
+    description: string,
+    temp: number,
+    high: number,
+    low: number,
+    fitcast: string
+  ) => {
+    try {
+      const prompt = `Explain briefly why you said to "${fitcast}$. The current weather is described as "${description}". The temperature is ${temp}ºF, with 
+      a high of ${high}ºF and a low of ${low}ºF. A response like "You typically feel hot in these conditions. Later, it will cool
+              down and rain." or "It's colder today than it is yesterday is great. Use less than 25 tokens. Don't apologize if there are any errors"`;
+
+      const response = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "system",
+                content: "You are a weather fashion assistant.",
+              },
+              { role: "user", content: prompt },
+            ],
+            max_tokens: 25,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      console.log(data);
+      setFitcastDescription(data.choices[0].message.content.trim());
+      console.log(fitcastDescription);
+    } catch (error) {
+      console.error("Error fetching OpenAI response:", error);
+      setFitcastDescription("Unable to generate fitcast advice.");
+    }
+  };
 
   if (!weather) return <Text>Loading...</Text>;
 
@@ -136,14 +240,13 @@ export default function Home({ userId }: HomeProps) {
             ]}
           >
             <AppText style={styles.fitcastDescriptionText} type="italic">
-              Dress light, but pack warm clothes for later.
+              {fitcastLabel}
             </AppText>
             <AppText
               style={{ color: "white", marginLeft: 8, marginRight: 10 }}
               type="caption"
             >
-              You typically feel hot in these conditions. Later, it will cool
-              down and rain.
+              {fitcastDescription}
             </AppText>
           </View>
           <Button
@@ -154,10 +257,7 @@ export default function Home({ userId }: HomeProps) {
             title="View Packing"
             onPress={() => router.push("/packing/packing")}
           />
-          <Button
-            title="Logout"
-            onPress={handleLogout}
-          />
+          <Button title="Logout" onPress={handleLogout} />
         </View>
       </View>
     </LinearGradient>
