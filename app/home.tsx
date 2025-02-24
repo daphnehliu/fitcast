@@ -6,7 +6,7 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { Session } from "@supabase/supabase-js";
 
-const OPENAI_API_KEY = "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"
+const OPENAI_API_KEY = ""
 
 const getGradientColors = (
   weatherDesc: string,
