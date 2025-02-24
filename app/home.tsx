@@ -3,11 +3,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { AppText } from "@/components/AppText";
 import { useRouter } from "expo-router";
 import React, { useState, useEffect } from "react";
-import { supabase } from '../lib/supabase';
+import { supabase } from "../lib/supabase";
 
 type HomeProps = {
-    userId: string;
-  };
+  userId: string;
+};
 
 const getGradientColors = (
   weatherDesc: string,
@@ -42,7 +42,7 @@ export default function Home({ userId }: HomeProps) {
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
     if (error) {
-      Alert.alert('Logout error', error.message);
+      Alert.alert("Logout error", error.message);
     }
     // Depending on your app's setup, you might want to do additional state updates or navigation here.
   }
@@ -154,10 +154,7 @@ export default function Home({ userId }: HomeProps) {
             title="View Packing"
             onPress={() => router.push("/packing/packing")}
           />
-          <Button
-            title="Logout"
-            onPress={handleLogout}
-          />
+          <Button title="Logout" onPress={handleLogout} />
         </View>
       </View>
     </LinearGradient>
