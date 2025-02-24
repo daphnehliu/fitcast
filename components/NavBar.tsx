@@ -3,11 +3,7 @@ import { useRouter } from "expo-router";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
-type NavBarProps = {
-    handleLogout: () => void;
-  };
-  
-export default function NavBar({ handleLogout }: NavBarProps) {
+export default function NavBar() {
     const router = useRouter();
   
     return (
@@ -22,7 +18,7 @@ export default function NavBar({ handleLogout }: NavBarProps) {
           <Text style={styles.navText}>Packing</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={handleLogout}>
+        <TouchableOpacity style={styles.navItem}  onPress={() => router.push("/profile")}>
             <Ionicons name="person-circle-outline" size={24} color="#0353A4" />
             <Text style={styles.navText}>Profile</Text>
         </TouchableOpacity>

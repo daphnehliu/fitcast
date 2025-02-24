@@ -244,21 +244,9 @@ export default function Home({ session }: { session: Session }) {
               {fitcastDescription}
             </AppText>
           </View>
-          <Button
-            title="View Timeline"
-            onPress={() => router.push("/timeline")}
-          />
-          <Button
-            title="View Packing"
-            onPress={() => router.push("/packing/packing")}
-          />
-          <Button
-            title="View Profile"
-            onPress={() => router.push("/profile")}
-          />
         </View>
       </View>
-      <NavBar handleLogout={handleLogout} />
+      <NavBar />
     </LinearGradient>
   );
 }
