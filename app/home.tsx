@@ -4,11 +4,9 @@ import { AppText } from "@/components/AppText";
 import { useRouter } from "expo-router";
 import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import { Session } from "@supabase/supabase-js";
 
-// const OPENAI_API_KEY = ...
-type HomeProps = {
-  userId: string;
-};
+const OPENAI_API_KEY = "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"
 
 const getGradientColors = (
   weatherDesc: string,
@@ -31,7 +29,7 @@ const getGradientColors = (
   return ["#4DC8E7", "#B0E7F0"];
 };
 
-export default function Home({ userId }: HomeProps) {
+export default function Home({ session }: { session: Session }) {
   const router = useRouter();
   const [weather, setWeather] = useState<any>(null);
   const [isNight, setIsNight] = useState(false);
@@ -39,16 +37,12 @@ export default function Home({ userId }: HomeProps) {
   const [gradientColors, setGradientColors] = useState<
     [string, string, ...string[]]
   >(["#4DC8E7", "#B0E7F0"]);
+
   const [fitcastDescription, setFitcastDescription] = useState("Loading...");
   const [fitcastLabel, setFitcastLabel] = useState("Loading...");
 
-  async function handleLogout() {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      Alert.alert("Logout error", error.message);
-    }
-    // Depending on your app's setup, you might want to do additional state updates or navigation here.
-  }
+  const userId = session.user?.id;
+  const username = session?.user?.user_metadata?.display_name || "No Name";
 
   useEffect(() => {
     setGradientColors(getGradientColors(weatherDesc, isNight));
@@ -195,7 +189,7 @@ export default function Home({ userId }: HomeProps) {
   return (
     <LinearGradient colors={gradientColors} style={styles.gradient}>
       <View style={styles.content}>
-        <AppText style={{ color: "white" }}>Hello, {userId}!</AppText>
+        <AppText style={{ color: "white" }}>Hello, {username}!</AppText>
         <View style={styles.header}>
           <AppText type="title" style={[styles.headertext]}>
             Your
@@ -257,7 +251,10 @@ export default function Home({ userId }: HomeProps) {
             title="View Packing"
             onPress={() => router.push("/packing/packing")}
           />
-          <Button title="Logout" onPress={handleLogout} />
+          <Button
+            title="View Profile"
+            onPress={() => router.push("/profile")}
+          />
         </View>
       </View>
     </LinearGradient>
