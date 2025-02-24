@@ -7,14 +7,14 @@ import { supabase } from "../lib/supabase";
 import NavBar from "@/components/NavBar";
 import { Session } from "@supabase/supabase-js";
 
-const OPENAI_API_KEY = ""
+const OPENAI_API_KEY = "";
 
 const getGradientColors = (
   weatherDesc: string,
   isNight: boolean
 ): [string, string, ...string[]] => {
   if (!weatherDesc) return ["#4DC8E7", "#B0E7F0"];
-``
+  ``;
   if (weatherDesc.includes("Clear")) {
     return isNight ? ["#0B1A42", "#2E4B7A"] : ["#4D92D9", "#B0E7F0"];
   } else if (weatherDesc.includes("Cloud")) {
@@ -28,7 +28,6 @@ const getGradientColors = (
   }
 
   return ["#4DC8E7", "#B0E7F0"];
-  
 };
 
 export default function Home({ session }: { session: Session }) {
@@ -146,9 +145,9 @@ export default function Home({ session }: { session: Session }) {
     fitcast: string
   ) => {
     try {
-      const prompt = `Explain briefly why you said to "${fitcast}$. The current weather is described as "${description}". The temperature is ${temp}ºF, with 
+      const prompt = `Explain briefly why "${fitcast}$ is a good recommendation for the current weather, which is described as "${description}". The temperature is ${temp}ºF, with 
       a high of ${high}ºF and a low of ${low}ºF. A response like "You typically feel hot in these conditions. Later, it will cool
-              down and rain." or "It's colder today than it is yesterday is great. Use less than 25 tokens. Don't apologize if there are any errors"`;
+              down and rain." or "It's colder today than it is yesterday, layer up a bit." is great. Use less than 25 tokens and don't apologize for errors."`;
 
       const response = await fetch(
         "https://api.openai.com/v1/chat/completions",
@@ -266,7 +265,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 10,
     right: 10,
-    zIndex: 100, 
+    zIndex: 100,
   },
   content: {
     flex: 1,
@@ -287,10 +286,10 @@ const styles = StyleSheet.create({
     color: "white",
   },
   userText: {
-    fontSize: 22, 
-    fontWeight: "bold", 
-    color: "white", 
-    fontFamily: "System", 
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "white",
+    fontFamily: "System",
   },
   weatherBox: {
     alignItems: "center",
