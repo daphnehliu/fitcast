@@ -4,6 +4,7 @@ import { AppText } from "@/components/AppText";
 import { useRouter } from "expo-router";
 import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import NavBar from "@/components/NavBar";
 
 // const OPENAI_API_KEY = ...
 type HomeProps = {
@@ -15,7 +16,7 @@ const getGradientColors = (
   isNight: boolean
 ): [string, string, ...string[]] => {
   if (!weatherDesc) return ["#4DC8E7", "#B0E7F0"];
-
+``
   if (weatherDesc.includes("Clear")) {
     return isNight ? ["#0B1A42", "#2E4B7A"] : ["#4D92D9", "#B0E7F0"];
   } else if (weatherDesc.includes("Cloud")) {
@@ -29,6 +30,7 @@ const getGradientColors = (
   }
 
   return ["#4DC8E7", "#B0E7F0"];
+  
 };
 
 export default function Home({ userId }: HomeProps) {
@@ -41,7 +43,6 @@ export default function Home({ userId }: HomeProps) {
   >(["#4DC8E7", "#B0E7F0"]);
   const [fitcastDescription, setFitcastDescription] = useState("Loading...");
   const [fitcastLabel, setFitcastLabel] = useState("Loading...");
-
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -195,7 +196,6 @@ export default function Home({ userId }: HomeProps) {
   return (
     <LinearGradient colors={gradientColors} style={styles.gradient}>
       <View style={styles.content}>
-        <AppText style={{ color: "white" }}>Hello, {userId}!</AppText>
         <View style={styles.header}>
           <AppText type="title" style={[styles.headertext]}>
             Your
@@ -249,17 +249,9 @@ export default function Home({ userId }: HomeProps) {
               {fitcastDescription}
             </AppText>
           </View>
-          <Button
-            title="View Timeline"
-            onPress={() => router.push("/timeline")}
-          />
-          <Button
-            title="View Packing"
-            onPress={() => router.push("/packing/packing")}
-          />
-          <Button title="Logout" onPress={handleLogout} />
         </View>
       </View>
+      <NavBar handleLogout={handleLogout} />
     </LinearGradient>
   );
 }
@@ -267,6 +259,19 @@ export default function Home({ userId }: HomeProps) {
 const styles = StyleSheet.create({
   gradient: {
     flex: 1,
+  },
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  logoutButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 100, 
   },
   content: {
     flex: 1,
@@ -285,6 +290,12 @@ const styles = StyleSheet.create({
   headertext: {
     marginBottom: -10,
     color: "white",
+  },
+  userText: {
+    fontSize: 22, 
+    fontWeight: "bold", 
+    color: "white", 
+    fontFamily: "System", 
   },
   weatherBox: {
     alignItems: "center",
