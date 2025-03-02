@@ -6,7 +6,8 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import NavBar from "@/components/NavBar";
 import { Session } from "@supabase/supabase-js";
-import { OPENAI_API_KEY, WEATHER_API } from "@env";
+
+const OPENAI_API_KEY = "";
 
 const getGradientColors = (
   weatherDesc: string,
@@ -55,8 +56,9 @@ export default function Home({ session }: { session: Session }) {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
+        const apiKey = "f076a815a1cbbdb3f228968604fdcc7a";
         const response = await fetch(
-          `http://api.openweathermap.org/data/2.5/weather?q=Palo%20Alto&appid=${WEATHER_API}&units=imperial`
+          `http://api.openweathermap.org/data/2.5/weather?q=Palo%20Alto&appid=${apiKey}&units=imperial`
         );
         const data = await response.json();
         setWeather(data);
