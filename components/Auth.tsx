@@ -214,6 +214,7 @@ export default function Auth({ onSkip }: AuthProps) {
       </View>
 
       {/* Profile Picture */}
+      {isSignUp && (
       <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
         <Image
           source={profileImage ? { uri: profileImage } : require("../assets/images/default-avatar.png")}
@@ -221,6 +222,7 @@ export default function Auth({ onSkip }: AuthProps) {
         />
         <AppText style={styles.imagePickerText}>Choose Profile Picture</AppText>
       </TouchableOpacity>
+      )}
 
       {/* Sign Up / Sign In Button */}
       <View style={styles.verticallySpaced}>
