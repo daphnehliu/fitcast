@@ -59,7 +59,7 @@ export default function Home({ session }: { session: Session }) {
       try {
         const apiKey = "f076a815a1cbbdb3f228968604fdcc7a";
         const response = await fetch(
-          `http://api.openweathermap.org/data/2.5/weather?q=Palo%20Alto&appid=${apiKey}&units=imperial`
+          `http://localhost:3000/weather`
         );
         const data = await response.json();
         setWeather(data);
@@ -109,7 +109,7 @@ export default function Home({ session }: { session: Session }) {
       Something like "Dress light with a short sleeve shirt and pants" or "Bundle up with a big jacket" is great. Use 10 or less tokens.`;
 
       const response = await fetch(
-        "https://api.openai.com/v1/chat/completions",
+        "http://localhost:3000/openai",
         {
           method: "POST",
           headers: {
