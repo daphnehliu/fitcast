@@ -1,16 +1,21 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
-import { StyleSheet, View, Alert, Text } from "react-native";
+import { StyleSheet, View, Alert, Text, Image, TouchableOpacity } from "react-native";
 import { Button, Input } from "@rneui/themed";
 import { Session } from "@supabase/supabase-js";
 import { useRouter } from "expo-router";
-import { useSession } from "../context/SessionContext";
+import * as ImagePicker from "expo-image-picker";
+import { AppText } from "@/components/AppText";
+
 
 export default function Account({ session }: { session: Session }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
 
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
@@ -31,16 +36,17 @@ export default function Account({ session }: { session: Session }) {
     try {
       setLoading(true);
       if (!session?.user) throw new Error("No user on the session!");
-
+  
       const { data, error, status } = await supabase
         .from("profiles")
         .select(`username, avatar_url`)
         .eq("id", session?.user.id)
         .single();
+  
       if (error && status !== 406) {
         throw error;
       }
-
+  
       if (data) {
         setUsername(data.username);
         setAvatarUrl(data.avatar_url);
@@ -53,7 +59,7 @@ export default function Account({ session }: { session: Session }) {
       setLoading(false);
     }
   }
-
+  
   async function updateProfile({
     username,
     avatar_url,
@@ -65,13 +71,13 @@ export default function Account({ session }: { session: Session }) {
       setLoading(true);
       if (!session?.user) throw new Error("No user on the session!");
 
-      // ✅ 1. Fetch current metadata to avoid overwriting other fields
+      // 1. Fetch current metadata to avoid overwriting other fields
       const { data: user, error: fetchError } = await supabase.auth.getUser();
       if (fetchError) throw fetchError;
 
       const currentMeta = user?.user?.user_metadata || {};
 
-      // ✅ 2. Update `display_name` in Supabase Auth metadata
+      // 2. Update `display_name` in Supabase Auth metadata
       const { error: authError } = await supabase.auth.updateUser({
         data: {
           ...currentMeta, // Preserve existing metadata
@@ -83,9 +89,7 @@ export default function Account({ session }: { session: Session }) {
         throw authError;
       }
 
-      console.log("✅ Display name updated in Supabase Auth");
-
-      // ✅ 3. Update the `profiles` table in Supabase
+      // 3. Update the `profiles` table in Supabase
       const updates = {
         id: session.user.id,
         username,
@@ -99,9 +103,9 @@ export default function Account({ session }: { session: Session }) {
         throw profileError;
       }
 
-      console.log("✅ Profile updated in `profiles` table");
+      console.log("Profile updated in `profiles` table");
 
-      // ✅ 4. Refresh session to reflect changes
+      // 4. Refresh session to reflect changes
       const { data: refreshedSession, error: sessionError } = await supabase.auth.refreshSession();
       if (sessionError) {
         throw sessionError;
@@ -111,16 +115,85 @@ export default function Account({ session }: { session: Session }) {
 
       Alert.alert("Profile updated successfully!");
     } catch (error) {
-      console.error("❌ Error in updateProfile:", JSON.stringify(error, null, 2));
     } finally {
       setLoading(false);
     }
   }
 
+  async function pickImage() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission denied", "You need to allow access to change your profile picture.");
+      return;
+    }
+  
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+  
+    if (!result.canceled) {
+      setProfileImage(result.assets[0].uri);
+      await uploadAvatar(result.assets[0].uri);
+    }
+  }
+  
+  async function uploadAvatar(uri: string) {
+    try {
+      setUploading(true);
+      if (!session?.user) throw new Error("No user on the session!");
+  
+      const fileExt = uri.split(".").pop();
+      const fileName = `${session.user.id}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+  
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, {
+          uri,
+          type: `image/${fileExt}`,
+          name: fileName,
+        });
+  
+      if (uploadError) throw uploadError;
+  
+      // Get the new public URL
+      const { data: publicUrlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+  
+      setAvatarUrl(publicUrlData.publicUrl);
+  
+      // Update profile in database
+      await updateProfile({ username, avatar_url: publicUrlData.publicUrl });
+  
+      Alert.alert("Profile picture updated!");
+    } catch (error) {
+      Alert.alert("Failed to update profile picture");
+    } finally {
+      setUploading(false);
+    }
+  }
+  
+
   return (
     <View style={styles.container}>
       {/* Title */}
       <Text style={styles.title}>Hello, {username || "User"}!</Text>
+
+      <View style={styles.imagePicker}>
+        <Image
+          source={avatarUrl ? { uri: avatarUrl } : require("../assets/images/default-avatar.png")}
+          style={styles.profileImage}
+        />
+        <TouchableOpacity onPress={pickImage}>
+          <AppText style={styles.imagePickerText}>Change Profile Picture</AppText>
+        </TouchableOpacity>
+      </View>
+
+
 
       {/* Input Fields */}
       
@@ -178,7 +251,7 @@ export default function Account({ session }: { session: Session }) {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 40,
+    marginTop: 60,
     padding: 12,
     alignItems: "center", // Centers everything
   },
@@ -230,4 +303,22 @@ const styles = StyleSheet.create({
     color: "#0353A4", // Blue text for outlined button
     textAlign: "center",
   },
+  imagePicker: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 15,
+  },
+  
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 8, // Space between image and text
+  },
+  
+  imagePickerText: {
+    color: "#0353A4",
+    textDecorationLine: "underline",
+    fontSize: 16,
+  },  
 });

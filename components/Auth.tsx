@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { Alert, StyleSheet, View, Text, Image} from "react-native";
+import { Alert, StyleSheet, View, Text, Image, TouchableOpacity} from "react-native";
 import { supabase } from "../lib/supabase";
 import { Input, Button} from "@rneui/themed";
 import { AppText } from "@/components/AppText";
+import * as ImagePicker from "expo-image-picker";
+
 
 type AuthProps = {
   onSkip: () => void;
@@ -14,6 +16,7 @@ export default function Auth({ onSkip }: AuthProps) {
   const [username, setUsername] = useState(""); // Username for sign-up
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(true); // Default is Sign Up
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   const fitcast = require("../assets/images/fitcast.png");
 
@@ -30,45 +33,126 @@ export default function Auth({ onSkip }: AuthProps) {
 
   async function signUpWithEmail() {
     setLoading(true);
-    
-    // Step 1: Create user in Supabase Auth
-    const { data: { user }, error } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-      options: {
-        data: { username: username }, // Store username in user metadata
-      },
-    });
-
-    if (error) {
-      Alert.alert(error.message);
+  
+    try {
+      // 1: Ensure username is unique
+      const { data: existingUsers, error: usernameCheckError } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("username", username);
+  
+      if (usernameCheckError) throw usernameCheckError;
+      if (existingUsers.length > 0) {
+        Alert.alert("Username is already taken. Please choose another.");
+        setLoading(false);
+        return;
+      }
+  
+      // 2: Check if email exists using RPC
+      const { data: emailExists, error: emailCheckError } = await supabase.rpc(
+        "check_email_exists",
+        { user_email: email }
+      );
+  
+      if (emailCheckError) {
+        console.error("Error checking email:", emailCheckError.message);
+        Alert.alert("Error checking email:", emailCheckError.message);
+        setLoading(false);
+        return;
+      }
+  
+      if (emailExists) {
+        Alert.alert("This email is already in use. Please log in instead.");
+        setLoading(false);
+        return;
+      }
+  
+      // : Sign up (Skip email verification)
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          emailRedirectTo: null,
+          data: { username: username }, // Store username in metadata
+        },
+      });
+  
+      if (error) {
+        Alert.alert("Sign-up failed", error.message);
+        setLoading(false);
+        return;
+      }
+  
+      console.log("User signed up and logged in:", data.user);
+  
+      let avatarUrl = ""; // Default to empty string
+  
+      // 4: Upload Profile Image if user selected one
+      if (profileImage) {
+        const fileExt = profileImage.split(".").pop();
+        const fileName = `${data.user.id}.${fileExt}`;
+        const filePath = `avatars/${fileName}`;
+  
+        const { error: uploadError } = await supabase.storage
+          .from("avatars") // Make sure you have this bucket in Supabase Storage
+          .upload(filePath, {
+            uri: profileImage,
+            type: `image/${fileExt}`,
+            name: fileName,
+          });
+  
+        if (uploadError) {
+          console.error("Image upload error:", uploadError.message);
+        } else {
+          const { data: publicUrlData } = supabase.storage
+            .from("avatars")
+            .getPublicUrl(filePath);
+          avatarUrl = publicUrlData.publicUrl; // Save URL for profile creation
+        }
+      }
+  
+      // 5: Insert user into profiles table
+      if (data.user) {
+        const { error: profileError } = await supabase.from("profiles").insert([
+          {
+            id: data.user.id, // Matches the auth user ID
+            username: username,
+            avatar_url: avatarUrl, // Use uploaded image or default
+          },
+        ]);
+  
+        if (profileError) throw profileError;
+      }
+  
+      Alert.alert("Sign-up successful! You're now logged in.");
+    } catch (error: any) {
+      Alert.alert("Sign-up failed", error.message);
+    } finally {
       setLoading(false);
+    }
+  }
+  
+  
+  async function pickImage() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission denied", "You need to allow access to upload a profile picture.");
       return;
     }
-
-    console.log("✅ User signed up:", user);
-
-    // Step 2: Insert new user into profiles table
-    if (user) {
-      const { error: profileError } = await supabase.from("profiles").insert([
-        {
-          id: user.id, // Matches the auth user ID
-          username: username,
-          avatar_url: "", // Empty for now, can be updated later
-        },
-      ]);
-
-      if (profileError) {
-        console.error("❌ Error inserting into profiles:", profileError);
-        Alert.alert("Error setting up profile", profileError.message);
-      } else {
-        console.log("✅ Profile successfully created for:", user.id);
-      }
+  
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+  
+    if (!result.canceled) {
+      setProfileImage(result.assets[0].uri);
     }
-
-    Alert.alert("Sign-up successful! Please check your inbox for verification.");
-    setLoading(false);
   }
+  
+
 
   return (
     <View style={styles.container}>
@@ -129,6 +213,15 @@ export default function Auth({ onSkip }: AuthProps) {
         />
       </View>
 
+      {/* Profile Picture */}
+      <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
+        <Image
+          source={profileImage ? { uri: profileImage } : require("../assets/images/default-avatar.png")}
+          style={styles.profileImage}
+        />
+        <AppText style={styles.imagePickerText}>Choose Profile Picture</AppText>
+      </TouchableOpacity>
+
       {/* Sign Up / Sign In Button */}
       <View style={styles.verticallySpaced}>
         {isSignUp ? (
@@ -160,13 +253,14 @@ export default function Auth({ onSkip }: AuthProps) {
         containerStyle={styles.buttonContainer}
         titleStyle={styles.buttonOutlineText} />
       </View>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 5,
+    marginTop: 35,
     padding: 12,
   },
   switchText: {
@@ -192,7 +286,7 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
     textAlign: "center",
     marginLeft: "25%",
-    marginBottom: 10,
+    marginBottom: 5,
   },
   headerText: {
     marginTop: 40,
@@ -242,4 +336,26 @@ const styles = StyleSheet.create({
     color: "#0353A4", // Blue text for outlined buttons
     textAlign: "center",
   },
+  imagePicker: {
+    flexDirection: "row", // Places image & text side by side
+    alignItems: "center", // Centers vertically
+    justifyContent: "center", // Centers horizontally
+    marginBottom: 15,
+    marginTop: -5,
+  },
+  
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginRight: 15, // Adds space between image and text
+  },
+  
+  imagePickerText: {
+    color: "#0353A4",
+    textDecorationLine: "underline",
+    fontSize: 16, 
+  },
+  
+  
 });
