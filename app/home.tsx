@@ -7,9 +7,7 @@ import { supabase } from "../lib/supabase";
 import NavBar from "@/components/NavBar";
 import { Session } from "@supabase/supabase-js";
 
-const OPENAI_API_KEY =
-  "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";
-
+const OPENAI_API_KEY = "";
 const getGradientColors = (
   weatherDesc: string,
   isNight: boolean
@@ -51,6 +49,7 @@ export default function Home({ session }: { session: Session }) {
   }, [weatherDesc, isNight]);
 
   const jacket = require("../assets/images/jacket.png");
+  const shirt = require("../assets/images/t-shirt.png");
   const pants = require("../assets/images/pants.png");
   const fitcast = require("../assets/images/fitcastWhite.png");
 
@@ -106,7 +105,8 @@ export default function Home({ session }: { session: Session }) {
       const prompt = `The current weather is described as "${description}". The temperature is ${temp}ºF, with 
       a high of ${high}ºF and a low of ${low}ºF. Provide a short clothing recommendation including specific 
       pieces of clothing to prepare for the weather. Don't give any reasoning and don't add any stylistic elements.
-      Something like "Dress light with a short sleeve shirt and pants" or "Bundle up with a big jacket" is great. Use 10 or less tokens.`;
+      Something like "Dress light with a short sleeve shirt and pants" or "Bundle up with a big jacket" is great. 
+      Use 10 or less tokens, proper grammar, and finish your thought`;
 
       const response = await fetch(
         "https://api.openai.com/v1/chat/completions",
@@ -155,7 +155,7 @@ export default function Home({ session }: { session: Session }) {
         const prompt = `Explain briefly why "${fitcast}" is a good recommendation for the current weather, which is described as "${description}". The temperature is ${temp}ºF, with 
         a high of ${high}ºF and a low of ${low}ºF. A response like "You typically feel hot in these conditions. Later, it will cool
                 down and rain." or "It's colder today than it is yesterday, layer up a bit." is great. Use less than 25 tokens and don't apologize for errors. 
-                Remove quotation marks from your reponses. Feel free to add extra details about how thick the clothing item should be.`;
+                Remove quotation marks from your reponses. Feel free to add extra details about how thick the clothing item should be. Use proper grammar and full sentences`;
 
         const response = await fetch(
           "https://api.openai.com/v1/chat/completions",
@@ -225,7 +225,7 @@ export default function Home({ session }: { session: Session }) {
                 <AppText style={styles.weatherDetailsText}>
                   Now: dress light
                 </AppText>
-                <Image source={jacket} style={styles.image} />
+                <Image source={shirt} style={styles.image} />
                 <Image source={pants} style={styles.image} />
               </View>
 
