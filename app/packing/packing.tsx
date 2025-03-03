@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   TextInput,
@@ -8,6 +8,7 @@ import {
   Text,
   StyleSheet,
   Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -20,32 +21,39 @@ export default function PackingInput() {
   const [destination, setDestination] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-
   const [isStartDatePickerVisible, setStartDatePickerVisible] = useState(false);
   const [isEndDatePickerVisible, setEndDatePickerVisible] = useState(false);
-
   const [searchText, setSearchText] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showResults, setShowResults] = useState(false);
 
-  const searchCities = async (text: string) => {
-    setSearchText(text);
-
-    if (text.length < 3) {
+  const searchCities = async () => {
+    if (searchText.length < 3) {
       setSearchResults([]);
+      setShowResults(false);
       return;
     }
 
     setIsLoading(true);
+    setShowResults(true);
 
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${text}&addressdetails=1&limit=5`
+        `https://wft-geo-db.p.rapidapi.com/v1/geo/cities?namePrefix=${searchText}&sort=-population`,
+        {
+          method: "GET",
+          headers: {
+            "X-RapidAPI-Key":
+              "1eb3f6b396msh26aac4e7e576b72p19e0c9jsn6ae4bc08fde6",
+            "X-RapidAPI-Host": "wft-geo-db.p.rapidapi.com",
+          },
+        }
       );
       const data = await response.json();
-      setSearchResults(data);
+      setSearchResults(data.data || []);
     } catch (error) {
-      console.error("Nominatim search failed", error);
+      console.error("GeoDB Cities API search failed", error);
     } finally {
       setIsLoading(false);
     }
@@ -74,42 +82,55 @@ export default function PackingInput() {
           Plan Your Packing
         </AppText>
 
-        {/* City Search */}
         <AppText style={styles.label}>Destination</AppText>
-        <TextInput
-          style={styles.input}
-          placeholder="Search for a city..."
-          value={searchText}
-          onChangeText={searchCities}
-        />
-
-        {isLoading && <AppText style={styles.loadingText}>Loading...</AppText>}
-
-        {searchResults.length > 0 && (
-          <FlatList
-            data={searchResults}
-            keyExtractor={(item) => item.place_id.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => {
-                  setDestination(item.display_name);
-                  setSearchResults([]);
-                  setSearchText(item.display_name);
-                  Keyboard.dismiss();
-                }}
-                style={styles.resultItem}
-              >
-                <Text style={styles.resultText}>{item.display_name}</Text>
-              </TouchableOpacity>
-            )}
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter city name..."
+            value={searchText}
+            onChangeText={setSearchText}
+            onSubmitEditing={searchCities}
+            returnKeyType="search"
           />
+          <Button title="Search" onPress={searchCities} />
+        </View>
+
+        {isLoading && (
+          <ActivityIndicator
+            size="small"
+            color="white"
+            style={styles.loadingIndicator}
+          />
+        )}
+
+        {showResults && searchResults.length > 0 && (
+          <View style={styles.dropdownContainer}>
+            <FlatList
+              data={searchResults}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => {
+                    setDestination(item.city);
+                    setSearchResults([]);
+                    setShowResults(false);
+                    Keyboard.dismiss();
+                  }}
+                  style={styles.resultItem}
+                >
+                  <Text style={styles.resultText}>
+                    {item.city}, {item.country}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
         )}
 
         {destination && (
           <AppText style={styles.selectedText}>Selected: {destination}</AppText>
         )}
 
-        {/* Start Date Picker */}
         <AppText style={styles.label}>Start Date</AppText>
         <Button
           title={startDate ? startDate.toDateString() : "Pick Start Date"}
@@ -118,7 +139,7 @@ export default function PackingInput() {
         <DateTimePickerModal
           isVisible={isStartDatePickerVisible}
           mode="date"
-          minimumDate={new Date()} // ✅ Prevents past dates
+          minimumDate={new Date()}
           onConfirm={(date) => {
             setStartDate(date);
             setStartDatePickerVisible(false);
@@ -126,7 +147,6 @@ export default function PackingInput() {
           onCancel={() => setStartDatePickerVisible(false)}
         />
 
-        {/* End Date Picker */}
         <AppText style={styles.label}>End Date</AppText>
         <Button
           title={endDate ? endDate.toDateString() : "Pick End Date"}
@@ -143,7 +163,6 @@ export default function PackingInput() {
           onCancel={() => setEndDatePickerVisible(false)}
         />
 
-        {/* Submit */}
         <Button title="Get Packing List" onPress={handleSubmit} />
       </View>
     </LinearGradient>
@@ -169,16 +188,28 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     color: "white",
   },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
   input: {
+    flex: 1,
     height: 50,
     backgroundColor: "white",
     borderRadius: 8,
     paddingHorizontal: 10,
     fontSize: 16,
     color: "black",
+    marginRight: 10,
+  },
+  dropdownContainer: {
+    maxHeight: 150,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    overflow: "hidden",
   },
   resultItem: {
-    backgroundColor: "#fff",
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#ddd",
@@ -186,12 +217,7 @@ const styles = StyleSheet.create({
   resultText: {
     color: "black",
   },
-  selectedText: {
-    fontSize: 16,
-    color: "white",
-    marginBottom: 8,
-  },
-  loadingText: {
-    color: "white",
+  loadingIndicator: {
+    marginVertical: 10,
   },
 });
