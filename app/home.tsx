@@ -191,7 +191,7 @@ export default function Home({ session }: { session: Session }) {
     <LinearGradient colors={gradientColors} style={styles.gradient}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <AppText type="title" style={[styles.headertext]}>
+          <AppText type="title" style={styles.headertext}>
             Your
           </AppText>
           <Image source={fitcast} style={styles.image} />
@@ -206,7 +206,7 @@ export default function Home({ session }: { session: Session }) {
           </AppText>
         </View>
 
-        <View style={styles.fitcastBox}>
+        <View style={styles.fitcastSection}>
           <View style={styles.fitcastBoxLight}>
             <View style={styles.fitcastLabel}>
               <View>
@@ -245,7 +245,6 @@ export default function Home({ session }: { session: Session }) {
           </View>
         </View>
       </View>
-      <NavBar />
     </LinearGradient>
   );
 }
@@ -269,6 +268,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    marginTop: 50,
   },
   header: {
     flexDirection: "row",
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
   headertext: {
-    marginBottom: -10,
+    marginBottom: -9.8,
     color: "white",
   },
   userText: {
@@ -307,11 +307,12 @@ const styles = StyleSheet.create({
     padding: 10,
     color: "white",
   },
-  fitcastBox: {
+  fitcastSection: {
     height: 300,
     width: 375,
+    alignSelf: "center",
     alignItems: "center",
-    margin: 14,
+    marginTop: 10,
     flex: 3,
   },
   fitcastBoxLight: {
