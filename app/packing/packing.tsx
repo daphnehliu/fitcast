@@ -14,6 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { AppText } from "@/components/AppText";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function PackingInput() {
   const router = useRouter();
@@ -40,20 +41,33 @@ export default function PackingInput() {
 
     try {
       const response = await fetch(
-        `https://wft-geo-db.p.rapidapi.com/v1/geo/cities?namePrefix=${searchText}&sort=-population`,
+        `https://api.api-ninjas.com/v1/city?name=${searchText}`,
         {
           method: "GET",
           headers: {
-            "X-RapidAPI-Key":
-              "1eb3f6b396msh26aac4e7e576b72p19e0c9jsn6ae4bc08fde6",
-            "X-RapidAPI-Host": "wft-geo-db.p.rapidapi.com",
+            "X-Api-Key": "kHi87Nos1QetHeMt5q54RA==wbicP9h0O7S6nxGZ",
           },
         }
       );
+
       const data = await response.json();
-      setSearchResults(data.data || []);
+
+      // Log the response for debugging
+      console.log("API Response:", data);
+
+      // Ensure data is an array before sorting
+      if (Array.isArray(data)) {
+        // Sort results by population in descending order
+        const sortedData = data.sort(
+          (a, b) => (b.population || 0) - (a.population || 0)
+        );
+        setSearchResults(sortedData);
+      } else {
+        console.error("Unexpected API response format:", data);
+        setSearchResults([]);
+      }
     } catch (error) {
-      console.error("GeoDB Cities API search failed", error);
+      console.error("API Ninjas City API search failed", error);
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +100,7 @@ export default function PackingInput() {
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Enter city name..."
+            placeholder={destination || "Enter city name..."}
             value={searchText}
             onChangeText={setSearchText}
             onSubmitEditing={searchCities}
@@ -102,35 +116,35 @@ export default function PackingInput() {
             style={styles.loadingIndicator}
           />
         )}
-
         {showResults && searchResults.length > 0 && (
           <View style={styles.dropdownContainer}>
             <FlatList
               data={searchResults}
-              keyExtractor={(item) => item.id.toString()}
+              keyExtractor={(item) => item.name}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  onPress={() => {
-                    setDestination(item.city);
-                    setSearchResults([]);
-                    setShowResults(false);
-                    Keyboard.dismiss();
-                  }}
                   style={styles.resultItem}
+                  onPress={async () => {
+                    try {
+                      setDestination(item.name);
+                      await AsyncStorage.setItem("destination", item.name); // ✅ Correct usage of await
+                      setSearchText(""); // Clear input field
+                      setSearchResults([]);
+                      setShowResults(false);
+                      Keyboard.dismiss();
+                    } catch (error) {
+                      console.error("Error saving destination:", error);
+                    }
+                  }}
                 >
                   <Text style={styles.resultText}>
-                    {item.city}, {item.country}
+                    {item.name}, {item.country}
                   </Text>
                 </TouchableOpacity>
               )}
             />
           </View>
         )}
-
-        {destination && (
-          <AppText style={styles.selectedText}>Selected: {destination}</AppText>
-        )}
-
         <AppText style={styles.label}>Start Date</AppText>
         <Button
           title={startDate ? startDate.toDateString() : "Pick Start Date"}
@@ -140,9 +154,15 @@ export default function PackingInput() {
           isVisible={isStartDatePickerVisible}
           mode="date"
           minimumDate={new Date()}
-          onConfirm={(date) => {
-            setStartDate(date);
-            setStartDatePickerVisible(false);
+          onConfirm={async (date) => {
+            // ✅ Mark function as async
+            try {
+              setStartDate(date);
+              await AsyncStorage.setItem("start_date", date.toISOString()); // ✅ Convert date to string
+              setStartDatePickerVisible(false);
+            } catch (error) {
+              console.error("Error saving start date:", error);
+            }
           }}
           onCancel={() => setStartDatePickerVisible(false)}
         />
@@ -156,13 +176,18 @@ export default function PackingInput() {
           isVisible={isEndDatePickerVisible}
           mode="date"
           minimumDate={startDate || new Date()}
-          onConfirm={(date) => {
-            setEndDate(date);
-            setEndDatePickerVisible(false);
+          onConfirm={async (date) => {
+            // ✅ Mark function as async
+            try {
+              setEndDate(date);
+              await AsyncStorage.setItem("end_date", date.toISOString()); // ✅ Fix key name
+              setEndDatePickerVisible(false);
+            } catch (error) {
+              console.error("Error saving end date:", error);
+            }
           }}
           onCancel={() => setEndDatePickerVisible(false)}
         />
-
         <Button title="Get Packing List" onPress={handleSubmit} />
       </View>
     </LinearGradient>
