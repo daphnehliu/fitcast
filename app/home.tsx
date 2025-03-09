@@ -1,15 +1,11 @@
-import { Text, View, StyleSheet, Image, Button } from "react-native";
+import { Text, View, StyleSheet, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AppText } from "@/components/AppText";
 import { useRouter } from "expo-router";
-import React, { useState, useEffect, createContext, useContext } from "react";
-import { supabase } from "../lib/supabase";
-import NavBar from "@/components/NavBar";
+import React, { useState, useEffect } from "react";
 import { Session } from "@supabase/supabase-js";
 import { useWeather } from "@/context/WeatherContext";
 
-const OPENAI_API_KEY =
-  "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";
 const getGradientColors = (
   weatherDesc: string,
   isNight: boolean
