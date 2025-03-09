@@ -3,6 +3,7 @@ import { SessionProvider, useSession } from "../context/SessionContext";
 import { WeatherProvider } from "../context/WeatherContext";
 import NavBar from "@/components/NavBar";
 import { View } from "react-native";
+import { TimelineProvider } from "../context/TimelineContext";
 
 function LayoutWithNavBar() {
   const { session } = useSession();
@@ -10,8 +11,10 @@ function LayoutWithNavBar() {
   return (
     <View style={{ flex: 1 }}>
       <WeatherProvider>
-        <Stack screenOptions={{ headerShown: false }} />
-        {session && <NavBar />}
+        <TimelineProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+          {session && <NavBar />}
+        </TimelineProvider>
       </WeatherProvider>
     </View>
   );
