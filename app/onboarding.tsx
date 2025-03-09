@@ -1,15 +1,13 @@
 import React, { useState } from "react";
+import { AppText } from "@/components/AppText";
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-
 
 export const unstable_settings = {
   layout: "none",
@@ -48,124 +46,126 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#4D92D9", "#B0E7F0"]}
-        style={styles.gradientContainer}
-      >
-        <ScrollView contentContainerStyle={styles.contentContainer}>
-          {step === 1 && (
-            <View style={styles.stepContainer}>
-              <Text style={styles.title}>How well do you tolerate cold weather?</Text>
-              {[
-                { label: "I feel cold easily", value: -1 },
-                { label: "Neutral", value: 0 },
-                { label: "I don’t feel cold easily", value: 1 },
-              ].map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.optionButton,
-                    coldTolerance === option.value && styles.selectedOption,
-                  ]}
-                  onPress={() => setColdTolerance(option.value)}
-                >
-                  <Text style={styles.optionText}>
-                    {option.label} {coldTolerance === option.value ? "✅" : ""}
-                  </Text>
+    <LinearGradient
+      colors={["#4D92D9", "#B0E7F0"]}
+      style={styles.gradientContainer}
+    >
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        {step === 1 && (
+          <View style={styles.stepContainer}>
+            <AppText style={styles.title}>
+              How well do you tolerate cold weather?
+            </AppText>
+            {[
+              { label: "I feel cold easily", value: -1 },
+              { label: "Neutral", value: 0 },
+              { label: "I don’t feel cold easily", value: 1 },
+            ].map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.optionButton,
+                  coldTolerance === option.value && styles.selectedOption,
+                ]}
+                onPress={() => setColdTolerance(option.value)}
+              >
+                <AppText style={styles.optionText}>
+                  {option.label} {coldTolerance === option.value ? "✅" : ""}
+                </AppText>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[
+                styles.navButton,
+                coldTolerance === null && styles.disabledButton,
+              ]}
+              onPress={handleNext}
+              disabled={coldTolerance === null}
+            >
+              <AppText style={styles.navButtonText}>Next</AppText>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {step === 2 && (
+          <View style={styles.stepContainer}>
+            <AppText style={styles.title}>
+              Select any clothing items you don't wear
+            </AppText>
+            <FlatList
+              data={[
+                "Jacket",
+                "Sweater",
+                "Hoodie",
+                "Jeans",
+                "Shorts",
+                "T-Shirt",
+                "Gloves",
+                "Scarf",
+                "Boots",
+              ]}
+              keyExtractor={(item) => item}
+              scrollEnabled={false} // <-- Disable internal scrolling
+              renderItem={({ item }) => (
+                <TouchableOpacity onPress={() => toggleExcludedItem(item)}>
+                  <AppText
+                    style={[
+                      styles.optionButton,
+                      excludedItems.includes(item) && styles.selectedOption,
+                    ]}
+                  >
+                    {item} {excludedItems.includes(item) ? "🚫" : ""}
+                  </AppText>
                 </TouchableOpacity>
-              ))}
-              <TouchableOpacity
-                style={[
-                  styles.navButton,
-                  coldTolerance === null && styles.disabledButton,
-                ]}
-                onPress={handleNext}
-                disabled={coldTolerance === null}
-              >
-                <Text style={styles.navButtonText}>Next</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+              )}
+            />
+            <TouchableOpacity style={styles.navButton} onPress={handleNext}>
+              <AppText style={styles.navButtonText}>Next</AppText>
+            </TouchableOpacity>
+          </View>
+        )}
 
-          {step === 2 && (
-            <View style={styles.stepContainer}>
-              <Text style={styles.title}>
-                Select any clothing items you don't wear
-              </Text>
-              <FlatList
-                data={[
-                  "Jacket",
-                  "Sweater",
-                  "Hoodie",
-                  "Jeans",
-                  "Shorts",
-                  "T-Shirt",
-                  "Gloves",
-                  "Scarf",
-                  "Boots",
-                ]}
-                keyExtractor={(item) => item}
-                scrollEnabled={false}  // <-- Disable internal scrolling
-                renderItem={({ item }) => (
-                  <TouchableOpacity onPress={() => toggleExcludedItem(item)}>
-                    <Text
-                      style={[
-                        styles.optionButton,
-                        excludedItems.includes(item) && styles.selectedOption,
-                      ]}
-                    >
-                      {item} {excludedItems.includes(item) ? "🚫" : ""}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
-              <TouchableOpacity style={styles.navButton} onPress={handleNext}>
-                <Text style={styles.navButtonText}>Next</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {step === 3 && (
-            <View style={styles.stepContainer}>
-              <Text style={styles.title}>Do you prefer layering clothes?</Text>
-              <TouchableOpacity
-                style={[
-                  styles.optionButton,
-                  prefersLayers === true && styles.selectedOption,
-                ]}
-                onPress={() => setPrefersLayers(true)}
-              >
-                <Text style={styles.optionText}>
-                  Yes {prefersLayers === true ? "✅" : ""}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.optionButton,
-                  prefersLayers === false && styles.selectedOption,
-                ]}
-                onPress={() => setPrefersLayers(false)}
-              >
-                <Text style={styles.optionText}>
-                  No {prefersLayers === false ? "✅" : ""}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.navButton,
-                  prefersLayers === null && styles.disabledButton,
-                ]}
-                onPress={handleFinish}
-                disabled={prefersLayers === null}
-              >
-                <Text style={styles.navButtonText}>Finish</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </ScrollView>
-      </LinearGradient>
-    </SafeAreaView>
+        {step === 3 && (
+          <View style={styles.stepContainer}>
+            <AppText style={styles.title}>
+              Do you prefer layering clothes?
+            </AppText>
+            <TouchableOpacity
+              style={[
+                styles.optionButton,
+                prefersLayers === true && styles.selectedOption,
+              ]}
+              onPress={() => setPrefersLayers(true)}
+            >
+              <AppText style={styles.optionText}>
+                Yes {prefersLayers === true ? "✅" : ""}
+              </AppText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.optionButton,
+                prefersLayers === false && styles.selectedOption,
+              ]}
+              onPress={() => setPrefersLayers(false)}
+            >
+              <AppText style={styles.optionText}>
+                No {prefersLayers === false ? "✅" : ""}
+              </AppText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.navButton,
+                prefersLayers === null && styles.disabledButton,
+              ]}
+              onPress={handleFinish}
+              disabled={prefersLayers === null}
+            >
+              <AppText style={styles.navButtonText}>Finish</AppText>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </LinearGradient>
   );
 }
 

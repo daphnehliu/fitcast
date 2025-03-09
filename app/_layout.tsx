@@ -6,14 +6,16 @@ import { View } from "react-native";
 import { TimelineProvider } from "../context/TimelineContext";
 
 function LayoutWithNavBar() {
-  const { session } = useSession();
+  const { session, profile, loadingProfile } = useSession();
 
   return (
     <View style={{ flex: 1 }}>
       <WeatherProvider>
         <TimelineProvider>
           <Stack screenOptions={{ headerShown: false }} />
-          {session && <NavBar />}
+          {session && !loadingProfile && profile?.onboarding_completed && (
+            <NavBar />
+          )}
         </TimelineProvider>
       </WeatherProvider>
     </View>
