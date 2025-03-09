@@ -56,16 +56,16 @@ export const WeatherProvider = ({ children }: { children: ReactNode }) => {
 
         const label = await getFitcastLabel(
           formattedDesc,
-          weather.main.temp,
-          weather.main.temp_max,
-          weather.main.temp_min
+          data.main.temp,
+          data.main.temp_max,
+          data.main.temp_min
         );
         setFitcastLabel(label);
         const descr = await getFitcastDescription(
           formattedDesc,
-          weather.main.temp,
-          weather.main.temp_max,
-          weather.main.temp_min,
+          data.main.temp,
+          data.main.temp_max,
+          data.main.temp_min,
           label
         );
         setFitcastDescription(descr);
