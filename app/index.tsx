@@ -9,12 +9,12 @@ import { supabase } from "../lib/supabase";
 export default function Index() {
   const { session, setSession } = useSession();
 
-  // Immediately bypass onboarding for a skip user.
+  //Bypass onboarding for a skip user.
   if (session && session.user && session.user.id === "skip-user") {
     return <Home session={session} />;
   }
 
-  // We'll use undefined for "not fetched yet" and null to indicate "no profile row exists"
+  //undefined for "not fetched yet" and null for "no profile row exists"
   const [profile, setProfile] = useState<any | null | undefined>(undefined);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
@@ -52,7 +52,7 @@ export default function Index() {
     }
   }, [session]);
 
-  // Show a spinner while the session is undefined or we're still loading.
+  // Show spinner while the session is undefined or we're still loading.
   if (session === undefined || loadingProfile) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -106,7 +106,7 @@ export default function Index() {
           setProfile(profileData);
           console.log("Index: Profile after update:", profileData);
 
-          // Step 2: Now that the profile row exists, upsert the user preferences.
+          //Now that the profile row exists, upsert the user preferences.
           const { data: prefData, error: prefError } = await supabase
             .from("initial_preferences")
             .upsert({

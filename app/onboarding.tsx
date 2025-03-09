@@ -3,11 +3,17 @@ import {
   View,
   Text,
   StyleSheet,
-  Button,
   FlatList,
   TouchableOpacity,
+  ScrollView,
+  SafeAreaView,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+
+
+export const unstable_settings = {
+  layout: "none",
+};
 
 type OnboardingProps = {
   onFinish: (prefs: {
@@ -18,7 +24,6 @@ type OnboardingProps = {
 };
 
 export default function Onboarding({ onFinish }: OnboardingProps) {
-  const router = useRouter();
   const [step, setStep] = useState(1);
   const [coldTolerance, setColdTolerance] = useState<number | null>(null);
   const [excludedItems, setExcludedItems] = useState<string[]>([]);
@@ -30,14 +35,11 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
 
   const toggleExcludedItem = (item: string) => {
     setExcludedItems((prev) =>
-      prev.includes(item)
-        ? prev.filter((i) => i !== item)
-        : [...prev, item]
+      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
     );
   };
 
   const handleFinish = () => {
-    // Pass the collected preferences up to the parent.
     onFinish({
       coldTolerance,
       excludedItems,
@@ -46,137 +48,177 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Step 1: Cold Tolerance Selection */}
-      {step === 1 && (
-        <View>
-          <Text style={styles.title}>How do you tolerate cold?</Text>
-          {[
-            { label: "I get cold easily (-1)", value: -1 },
-            { label: "Neutral (0)", value: 0 },
-            { label: "I don’t get cold much (1)", value: 1 },
-          ].map((option) => (
-            <TouchableOpacity
-              key={option.value}
-              style={[
-                styles.optionButton,
-                coldTolerance === option.value && styles.selectedOption,
-              ]}
-              onPress={() => setColdTolerance(option.value)}
-            >
-              <Text style={styles.optionText}>
-                {option.label} {coldTolerance === option.value ? "✅" : ""}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          <Button
-            title="Next"
-            onPress={handleNext}
-            disabled={coldTolerance === null}
-          />
-        </View>
-      )}
-
-      {/* Step 2: Excluded Clothing Items Selection */}
-      {step === 2 && (
-        <View>
-          <Text style={styles.title}>Select clothing items to exclude</Text>
-          <Button title="Next" onPress={handleNext} />
-          <FlatList
-            data={[
-              "Jacket",
-              "Sweater",
-              "Hoodie",
-              "Jeans",
-              "Shorts",
-              "T-Shirt",
-              "Gloves",
-              "Scarf",
-              "Boots",
-            ]}
-            keyExtractor={(item) => item}
-            renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => toggleExcludedItem(item)}>
-                <Text
+    <SafeAreaView style={{ flex: 1 }}>
+      <LinearGradient
+        colors={["#4D92D9", "#B0E7F0"]}
+        style={styles.gradientContainer}
+      >
+        <ScrollView contentContainerStyle={styles.contentContainer}>
+          {step === 1 && (
+            <View style={styles.stepContainer}>
+              <Text style={styles.title}>How well do you tolerate cold weather?</Text>
+              {[
+                { label: "I feel cold easily", value: -1 },
+                { label: "Neutral", value: 0 },
+                { label: "I don’t feel cold easily", value: 1 },
+              ].map((option) => (
+                <TouchableOpacity
+                  key={option.value}
                   style={[
                     styles.optionButton,
-                    excludedItems.includes(item) && styles.selectedOption,
+                    coldTolerance === option.value && styles.selectedOption,
                   ]}
+                  onPress={() => setColdTolerance(option.value)}
                 >
-                  {item} {excludedItems.includes(item) ? "🚫" : ""}
+                  <Text style={styles.optionText}>
+                    {option.label} {coldTolerance === option.value ? "✅" : ""}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={[
+                  styles.navButton,
+                  coldTolerance === null && styles.disabledButton,
+                ]}
+                onPress={handleNext}
+                disabled={coldTolerance === null}
+              >
+                <Text style={styles.navButtonText}>Next</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {step === 2 && (
+            <View style={styles.stepContainer}>
+              <Text style={styles.title}>Select any clothing items you don't wear</Text>
+              <FlatList
+                data={[
+                  "Jacket",
+                  "Sweater",
+                  "Hoodie",
+                  "Jeans",
+                  "Shorts",
+                  "T-Shirt",
+                  "Gloves",
+                  "Scarf",
+                  "Boots",
+                ]}
+                keyExtractor={(item) => item}
+                renderItem={({ item }) => (
+                  <TouchableOpacity onPress={() => toggleExcludedItem(item)}>
+                    <Text
+                      style={[
+                        styles.optionButton,
+                        excludedItems.includes(item) && styles.selectedOption,
+                      ]}
+                    >
+                      {item} {excludedItems.includes(item) ? "🚫" : ""}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+              <TouchableOpacity style={styles.navButton} onPress={handleNext}>
+                <Text style={styles.navButtonText}>Next</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {step === 3 && (
+            <View style={styles.stepContainer}>
+              <Text style={styles.title}>Do you prefer layering clothes?</Text>
+              <TouchableOpacity
+                style={[
+                  styles.optionButton,
+                  prefersLayers === true && styles.selectedOption,
+                ]}
+                onPress={() => setPrefersLayers(true)}
+              >
+                <Text style={styles.optionText}>
+                  Yes {prefersLayers === true ? "✅" : ""}
                 </Text>
               </TouchableOpacity>
-            )}
-          />
-          
-        </View>
-      )}
-
-      {/* Step 3: Layering Preference */}
-      {step === 3 && (
-        <View>
-          <Text style={styles.title}>
-            Do you prefer layering clothes?
-          </Text>
-          <TouchableOpacity
-            style={[
-              styles.optionButton,
-              prefersLayers === true && styles.selectedOption,
-            ]}
-            onPress={() => setPrefersLayers(true)}
-          >
-            <Text style={styles.optionText}>
-              Yes {prefersLayers === true ? "✅" : ""}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.optionButton,
-              prefersLayers === false && styles.selectedOption,
-            ]}
-            onPress={() => setPrefersLayers(false)}
-          >
-            <Text style={styles.optionText}>
-              No {prefersLayers === false ? "✅" : ""}
-            </Text>
-          </TouchableOpacity>
-          <Button
-            title="Finish"
-            onPress={handleFinish}
-            disabled={prefersLayers === null}
-          />
-        </View>
-      )}
-    </View>
+              <TouchableOpacity
+                style={[
+                  styles.optionButton,
+                  prefersLayers === false && styles.selectedOption,
+                ]}
+                onPress={() => setPrefersLayers(false)}
+              >
+                <Text style={styles.optionText}>
+                  No {prefersLayers === false ? "✅" : ""}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.navButton,
+                  prefersLayers === null && styles.disabledButton,
+                ]}
+                onPress={handleFinish}
+                disabled={prefersLayers === null}
+              >
+                <Text style={styles.navButtonText}>Finish</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScrollView>
+      </LinearGradient>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  gradientContainer: {
     flex: 1,
-    padding: 20,
+  },
+  contentContainer: {
+    flexGrow: 1,
+    justifyContent: "center", // Center vertically
     alignItems: "center",
-    justifyContent: "center",
+    padding: 20,
+  },
+  stepContainer: {
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 30,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 20,
     textAlign: "center",
+    color: "#FFF",
   },
   optionButton: {
     padding: 10,
     marginVertical: 5,
     borderWidth: 1,
-    borderColor: "gray",
-    borderRadius: 5,
+    borderColor: "#FFF",
+    borderRadius: 8,
     width: 250,
     alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
   },
   selectedOption: {
-    backgroundColor: "#add8e6",
+    backgroundColor: "#FEEA7B",
+    borderColor: "#FBCB0A",
   },
   optionText: {
     fontSize: 18,
+    color: "#333",
+  },
+  navButton: {
+    backgroundColor: "#0353A4",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    marginTop: 20,
+  },
+  disabledButton: {
+    backgroundColor: "#888",
+  },
+  navButtonText: {
+    color: "#FFF",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
