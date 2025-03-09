@@ -90,7 +90,9 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
 
           {step === 2 && (
             <View style={styles.stepContainer}>
-              <Text style={styles.title}>Select any clothing items you don't wear</Text>
+              <Text style={styles.title}>
+                Select any clothing items you don't wear
+              </Text>
               <FlatList
                 data={[
                   "Jacket",
@@ -104,6 +106,7 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
                   "Boots",
                 ]}
                 keyExtractor={(item) => item}
+                scrollEnabled={false}  // <-- Disable internal scrolling
                 renderItem={({ item }) => (
                   <TouchableOpacity onPress={() => toggleExcludedItem(item)}>
                     <Text
