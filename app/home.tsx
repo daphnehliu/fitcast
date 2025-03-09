@@ -51,6 +51,7 @@ export default function Home({ session }: { session: Session }) {
   const pants = require("../assets/images/pants.png");
   const fitcast = require("../assets/images/fitcastWhite.png");
 
+
   if (!weather) return <Text>Loading...</Text>;
 
   const currentTemp = Math.round(weather.main.temp);

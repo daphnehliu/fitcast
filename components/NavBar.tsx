@@ -6,14 +6,13 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 export default function NavBar() {
   const router = useRouter();
   const pathname = usePathname(); // gets current route/path
-
   // navigate only if the user is NOT already on that screen
   const goToScreen = (screen) => {
     if (pathname !== screen) {
       router.push(screen);
     }
   };
-
+  
   return (
     <View style={styles.navBar}>
       <TouchableOpacity style={styles.navItem} onPress={() => goToScreen("/")}>
