@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { SessionProvider, useSession } from "../context/SessionContext";
+import { WeatherProvider } from "../context/WeatherContext";
 import NavBar from "@/components/NavBar";
 import { View } from "react-native";
 
@@ -8,8 +9,10 @@ function LayoutWithNavBar() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Stack screenOptions={{ headerShown: false }} />
-      {session && <NavBar />}
+      <WeatherProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+        {session && <NavBar />}
+      </WeatherProvider>
     </View>
   );
 }

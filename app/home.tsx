@@ -2,14 +2,14 @@ import { Text, View, StyleSheet, Image, Button } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AppText } from "@/components/AppText";
 import { useRouter } from "expo-router";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, createContext, useContext } from "react";
 import { supabase } from "../lib/supabase";
 import NavBar from "@/components/NavBar";
 import { Session } from "@supabase/supabase-js";
+import { useWeather } from "@/context/WeatherContext";
 
 const OPENAI_API_KEY =
   "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";
-
 const getGradientColors = (
   weatherDesc: string,
   isNight: boolean
@@ -33,15 +33,11 @@ const getGradientColors = (
 
 export default function Home({ session }: { session: Session }) {
   const router = useRouter();
-  const [weather, setWeather] = useState<any>(null);
-  const [isNight, setIsNight] = useState(false);
-  const [weatherDesc, setWeatherDesc] = useState("");
+  const { weather, isNight, weatherDesc, fitcastDescription, fitcastLabel } =
+    useWeather();
   const [gradientColors, setGradientColors] = useState<
     [string, string, ...string[]]
   >(["#4DC8E7", "#B0E7F0"]);
-
-  const [fitcastDescription, setFitcastDescription] = useState("Loading...");
-  const [fitcastLabel, setFitcastLabel] = useState("Loading...");
 
   const userId = session.user?.id;
   const username = session?.user?.user_metadata?.display_name || "No Name";
@@ -51,147 +47,10 @@ export default function Home({ session }: { session: Session }) {
   }, [weatherDesc, isNight]);
 
   const jacket = require("../assets/images/jacket.png");
+  const shirt = require("../assets/images/t-shirt.png");
   const pants = require("../assets/images/pants.png");
   const fitcast = require("../assets/images/fitcastWhite.png");
 
-  useEffect(() => {
-    const fetchWeather = async () => {
-      try {
-        const apiKey = "f076a815a1cbbdb3f228968604fdcc7a";
-        const response = await fetch(
-          `http://localhost:3000/weather`
-        );
-        const data = await response.json();
-        setWeather(data);
-
-        const currentHour = new Date().getHours();
-        setIsNight(currentHour < 6 || currentHour > 18);
-        const formattedDesc = data.weather[0].description
-          .toLowerCase()
-          .split(" ")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" ");
-        setWeatherDesc(formattedDesc);
-
-        const label = await getFitcastLabel(
-          formattedDesc,
-          data.main.temp,
-          data.main.temp_max,
-          data.main.temp_min
-        );
-        setFitcastLabel(label);
-        const descr = await getFitcastDescription(
-          formattedDesc,
-          data.main.temp,
-          data.main.temp_max,
-          data.main.temp_min,
-          label
-        );
-        setFitcastDescription(descr);
-      } catch (error) {
-        console.error("Error fetching weather: ", error);
-      }
-    };
-
-    fetchWeather();
-  }, []);
-
-  const getFitcastLabel = async (
-    description: string,
-    temp: number,
-    high: number,
-    low: number
-  ): Promise<string> => {
-    try {
-      const prompt = `The current weather is described as "${description}". The temperature is ${temp}ºF, with 
-      a high of ${high}ºF and a low of ${low}ºF. Provide a short clothing recommendation including specific 
-      pieces of clothing to prepare for the weather. Don't give any reasoning and don't add any stylistic elements.
-      Something like "Dress light with a short sleeve shirt and pants" or "Bundle up with a big jacket" is great. Use 10 or less tokens.`;
-
-      const response = await fetch(
-        "http://localhost:3000/openai",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "system",
-                content: "You are a weather fashion assistant.",
-              },
-              { role: "user", content: prompt },
-            ],
-            max_tokens: 10,
-          }),
-        }
-      );
-
-      const data = await response.json();
-      const fitcastLabel = data.choices[0].message.content.trim();
-      console.log(
-        "Successfully recieved fitcastLabel prompt response: ",
-        fitcastLabel
-      );
-      return fitcastLabel;
-    } catch (error) {
-      console.error("Error fetching OpenAI response:", error);
-      return "Unable to generate fitcast advice.";
-    }
-  };
-
-  const getFitcastDescription = async (
-    description: string,
-    temp: number,
-    high: number,
-    low: number,
-    fitcast: string
-  ): Promise<string> => {
-    if (fitcast != "Unable to generate fitcast advice.") {
-      try {
-        const prompt = `Explain briefly why "${fitcast}" is a good recommendation for the current weather, which is described as "${description}". The temperature is ${temp}ºF, with 
-        a high of ${high}ºF and a low of ${low}ºF. A response like "You typically feel hot in these conditions. Later, it will cool
-                down and rain." or "It's colder today than it is yesterday, layer up a bit." is great. Use less than 25 tokens and don't apologize for errors. 
-                Remove quotation marks from your reponses. Feel free to add extra details about how thick the clothing item should be.`;
-
-        const response = await fetch(
-          "https://api.openai.com/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${OPENAI_API_KEY}`,
-            },
-            body: JSON.stringify({
-              model: "gpt-4o",
-              messages: [
-                {
-                  role: "system",
-                  content: "You are a weather fashion assistant.",
-                },
-                { role: "user", content: prompt },
-              ],
-              max_tokens: 25,
-            }),
-          }
-        );
-
-        const data = await response.json();
-        const fitcastDescription = data.choices[0].message.content.trim();
-        console.log(
-          "Successfully recieved fitcastDescription prompt response: ",
-          fitcastDescription
-        );
-        return fitcastDescription;
-      } catch (error) {
-        console.error("Error fetching OpenAI response:", error);
-        return "Unable to generate fitcast description.";
-      }
-    }
-  };
 
   if (!weather) return <Text>Loading...</Text>;
 
@@ -225,7 +84,7 @@ export default function Home({ session }: { session: Session }) {
                 <AppText style={styles.weatherDetailsText}>
                   Now: dress light
                 </AppText>
-                <Image source={jacket} style={styles.image} />
+                <Image source={shirt} style={styles.image} />
                 <Image source={pants} style={styles.image} />
               </View>
 
