@@ -1,36 +1,48 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Button, FlatList, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Button,
+  FlatList,
+  TouchableOpacity,
+} from "react-native";
 import { useRouter } from "expo-router";
 
 type OnboardingProps = {
-  onFinish: () => void;
+  onFinish: (prefs: {
+    coldTolerance: number | null;
+    excludedItems: string[];
+    prefersLayers: boolean | null;
+  }) => void;
 };
 
 export default function Onboarding({ onFinish }: OnboardingProps) {
   const router = useRouter();
-  //Tracks step of the onboarding, variables to keep track of preferences (will get stored in backend later)
   const [step, setStep] = useState(1);
   const [coldTolerance, setColdTolerance] = useState<number | null>(null);
   const [excludedItems, setExcludedItems] = useState<string[]>([]);
   const [prefersLayers, setPrefersLayers] = useState<boolean | null>(null);
 
-//Handle to move to the next step
   const handleNext = () => {
-    setStep(step + 1);
+    setStep((prev) => prev + 1);
   };
 
-  //
   const toggleExcludedItem = (item: string) => {
     setExcludedItems((prev) =>
-      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
+      prev.includes(item)
+        ? prev.filter((i) => i !== item)
+        : [...prev, item]
     );
   };
 
   const handleFinish = () => {
-    // Mark onboarding as completed in AsyncStorage
-    //await AsyncStorage.setItem("hasOnboarded", "true");
-    // Later I will include an API POST request to put these preferences in the backend server
-    onFinish();
+    // Pass the collected preferences up to the parent.
+    onFinish({
+      coldTolerance,
+      excludedItems,
+      prefersLayers,
+    });
   };
 
   return (
@@ -57,17 +69,19 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
               </Text>
             </TouchableOpacity>
           ))}
-          <Button title="Next" onPress={handleNext} disabled={coldTolerance === null} />
+          <Button
+            title="Next"
+            onPress={handleNext}
+            disabled={coldTolerance === null}
+          />
         </View>
       )}
 
       {/* Step 2: Excluded Clothing Items Selection */}
       {step === 2 && (
-        <View style={styles.stepContainer}>
+        <View>
           <Text style={styles.title}>Select clothing items to exclude</Text>
-          <View style={styles.buttonContainer}>
-            <Button title="Next" onPress={handleNext} />
-          </View>
+          <Button title="Next" onPress={handleNext} />
           <FlatList
             data={[
               "Jacket",
@@ -81,35 +95,56 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
               "Boots",
             ]}
             keyExtractor={(item) => item}
-            contentContainerStyle={styles.flatListContent}
             renderItem={({ item }) => (
               <TouchableOpacity onPress={() => toggleExcludedItem(item)}>
-                <View style={[styles.item, excludedItems.includes(item) && styles.excludedItem]}>
-                  <Text>{item}</Text>
-                </View>
+                <Text
+                  style={[
+                    styles.optionButton,
+                    excludedItems.includes(item) && styles.selectedOption,
+                  ]}
+                >
+                  {item} {excludedItems.includes(item) ? "🚫" : ""}
+                </Text>
               </TouchableOpacity>
             )}
           />
+          
         </View>
       )}
 
       {/* Step 3: Layering Preference */}
       {step === 3 && (
         <View>
-          <Text style={styles.title}>Do you prefer layering clothes?</Text>
+          <Text style={styles.title}>
+            Do you prefer layering clothes?
+          </Text>
           <TouchableOpacity
-            style={[styles.optionButton, prefersLayers === true && styles.selectedOption]}
+            style={[
+              styles.optionButton,
+              prefersLayers === true && styles.selectedOption,
+            ]}
             onPress={() => setPrefersLayers(true)}
           >
-            <Text style={styles.optionText}>Yes {prefersLayers === true ? "✅" : ""}</Text>
+            <Text style={styles.optionText}>
+              Yes {prefersLayers === true ? "✅" : ""}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.optionButton, prefersLayers === false && styles.selectedOption]}
+            style={[
+              styles.optionButton,
+              prefersLayers === false && styles.selectedOption,
+            ]}
             onPress={() => setPrefersLayers(false)}
           >
-            <Text style={styles.optionText}>No {prefersLayers === false ? "✅" : ""}</Text>
+            <Text style={styles.optionText}>
+              No {prefersLayers === false ? "✅" : ""}
+            </Text>
           </TouchableOpacity>
-          <Button title="Finish" onPress={handleFinish} disabled={prefersLayers === null} />
+          <Button
+            title="Finish"
+            onPress={handleFinish}
+            disabled={prefersLayers === null}
+          />
         </View>
       )}
     </View>
@@ -119,22 +154,9 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     padding: 20,
-  },
-  stepContainer: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-  },
-  flatListContent: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingBottom: 20,
-  },
-  buttonContainer: {
-    marginTop: 20,
   },
   title: {
     fontSize: 24,
@@ -156,17 +178,5 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 18,
-  },
-  item: {
-    padding: 10,
-    marginVertical: 5,
-    borderWidth: 1,
-    borderColor: "gray",
-    borderRadius: 5,
-    width: 200,
-    alignItems: "center",
-  },
-  excludedItem: {
-    backgroundColor: "lightgray",
   },
 });
