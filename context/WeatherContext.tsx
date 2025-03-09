@@ -8,20 +8,13 @@ import React, {
 
 const OPENAI_API_KEY =
   "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";
-
 interface WeatherContextType {
   weather: any;
-  setWeather: React.Dispatch<React.SetStateAction<any>>;
   isNight: boolean;
-  setIsNight: React.Dispatch<React.SetStateAction<boolean>>;
   weatherDesc: string;
-  setWeatherDesc: React.Dispatch<React.SetStateAction<string>>;
   gradientColors: string[];
-  setGradientColors: React.Dispatch<React.SetStateAction<string[]>>;
   fitcastDescription: string;
-  setFitcastDescription: React.Dispatch<React.SetStateAction<string>>;
   fitcastLabel: string;
-  setFitcastLabel: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export const WeatherContext = createContext<WeatherContextType | undefined>(
@@ -60,7 +53,6 @@ export const WeatherProvider = ({ children }: { children: ReactNode }) => {
           data.main.temp_max,
           data.main.temp_min
         );
-        setFitcastLabel(label);
         const descr = await getFitcastDescription(
           formattedDesc,
           data.main.temp,
@@ -68,6 +60,7 @@ export const WeatherProvider = ({ children }: { children: ReactNode }) => {
           data.main.temp_min,
           label
         );
+        setFitcastLabel(label);
         setFitcastDescription(descr);
       } catch (error) {
         console.error("Error fetching weather: ", error);
@@ -178,15 +171,10 @@ export const WeatherProvider = ({ children }: { children: ReactNode }) => {
     <WeatherContext.Provider
       value={{
         weather,
-        setWeather,
         isNight,
-        setIsNight,
         weatherDesc,
-        setWeatherDesc,
         fitcastDescription,
-        setFitcastDescription,
         fitcastLabel,
-        setFitcastLabel,
       }}
     >
       {children}
