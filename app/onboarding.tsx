@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { AppText } from "@/components/AppText";
 import {
   View,
@@ -8,8 +8,6 @@ import {
   Image,
   Alert,
   Dimensions,
-  TextInput,
-  FlatList,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
@@ -41,10 +39,6 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
     city?: string;
   } | null>(null);
   const [region, setRegion] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [isManual, setIsManual] = useState(false);
-  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Clothing options and images
   const clothingOptions = [
@@ -79,10 +73,9 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
 
   // Called when the user completes onboarding (e.g., after Step 4)
   const handleFinish = () => {
-    // Here, instead of computing excluded items, we record the items that have a checkmark.
     onFinish({
       coldTolerance,
-      items: selectedClothes, // now passing the selected items
+      items: selectedClothes,
       prefersLayers,
       location,
     });
@@ -130,52 +123,6 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
     } catch (error) {
       Alert.alert("Error", "Unable to fetch location. Please try again.");
     }
-  };
-
-  // Search for a location based on the search query.
-  useEffect(() => {
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    if (!searchQuery || searchQuery.length < 1) {
-      setSuggestions([]);
-      return;
-    }
-    searchTimeout.current = setTimeout(async () => {
-      try {
-        const results = await Location.geocodeAsync(searchQuery);
-        const filtered = results.filter((result: any) =>
-          result.name || result.city || result.region
-        );
-        setSuggestions(filtered);
-      } catch (error) {
-        console.error("Error fetching location suggestions:", error);
-        setSuggestions([]);
-      }
-    }, 500);
-  }, [searchQuery]);
-
-  // When a suggestion is clicked, update the location and map region.
-  const handleSelectSuggestion = async (
-    result: Location.LocationGeocodedAddress
-  ) => {
-    const coords = {
-      latitude: result.latitude,
-      longitude: result.longitude,
-      accuracy: 0,
-      altitude: 0,
-      heading: 0,
-      speed: 0,
-    };
-    const city =
-      result.name || (await reverseGeocode(coords)) || "Unknown location";
-    setLocation({ coords, city });
-    setRegion({
-      latitude: result.latitude,
-      longitude: result.longitude,
-      latitudeDelta: 0.05,
-      longitudeDelta: 0.05,
-    });
-    setSuggestions([]);
-    setSearchQuery(city);
   };
 
   // When the marker is dragged, update location and re-reverse geocode.
@@ -229,14 +176,11 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
         {/* Step 1: Choose Your Location */}
         {step === 1 && (
           <View style={styles.stepContainer}>
-            {(isManual || location) && (
+            {location && (
               <TouchableOpacity
                 onPress={() => {
                   setLocation(null);
                   setRegion(null);
-                  setIsManual(false);
-                  setSearchQuery("");
-                  setSuggestions([]);
                 }}
                 style={styles.backButton}
               >
@@ -249,78 +193,36 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
             <AppText style={styles.locationSubtitle}>
               Explore outfit recommendations around you
             </AppText>
-            {!location && !isManual && (
-              <>
-                <TouchableOpacity
-                  style={styles.detectLocationButton}
-                  onPress={handleGetLocation}
-                >
-                  <View style={styles.detectLocationRow}>
-                    <Ionicons
-                      name="location-sharp"
-                      size={20}
-                      color="#FFF"
-                      style={{ marginRight: 8 }}
-                    />
-                    <AppText style={styles.detectLocationText}>
-                      Detect my location
-                    </AppText>
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.manualLocationButton}
-                  onPress={() => setIsManual(true)}
-                >
-                  <AppText style={styles.manualLocationText}>
-                    Enter location manually
-                  </AppText>
-                </TouchableOpacity>
-              </>
-            )}
-            {isManual && !location && (
-              <>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter city name..."
-                  placeholderTextColor="#999"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-                {suggestions.length > 0 && (
-                  <FlatList
-                    data={suggestions}
-                    keyExtractor={(item, index) =>
-                      `${item.latitude}-${item.longitude}-${index}`
-                    }
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={styles.suggestionItem}
-                        onPress={() => handleSelectSuggestion(item)}
-                      >
-                        <AppText style={styles.suggestionText}>
-                          {item.name || item.city || item.region || "Unknown location"}
-                        </AppText>
-                      </TouchableOpacity>
-                    )}
-                    style={styles.suggestionsList}
+            {!location && (
+              <TouchableOpacity
+                style={styles.detectLocationButton}
+                onPress={handleGetLocation}
+              >
+                <View style={styles.detectLocationRow}>
+                  <Ionicons
+                    name="location-sharp"
+                    size={20}
+                    color="#FFF"
+                    style={{ marginRight: 8 }}
                   />
-                )}
-              </>
+                  <AppText style={styles.detectLocationText}>
+                    Detect my location
+                  </AppText>
+                </View>
+              </TouchableOpacity>
             )}
-            {location && (
+            {location && region && (
               <>
-                {region && (
-                  <MapView style={styles.map} region={region}>
-                    <Marker
-                      coordinate={{
-                        latitude: region.latitude,
-                        longitude: region.longitude,
-                      }}
-                      draggable
-                      onDragEnd={handleMarkerDragEnd}
-                    />
-                  </MapView>
-                )}
+                <MapView style={styles.map} region={region}>
+                  <Marker
+                    coordinate={{
+                      latitude: region.latitude,
+                      longitude: region.longitude,
+                    }}
+                    draggable
+                    onDragEnd={handleMarkerDragEnd}
+                  />
+                </MapView>
                 <TouchableOpacity style={styles.navButton} onPress={handleNext}>
                   <AppText style={styles.navButtonText}>Confirm Location</AppText>
                 </TouchableOpacity>
@@ -529,47 +431,6 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 16,
     fontWeight: "600",
-  },
-  manualLocationButton: {
-    width: "80%",
-    backgroundColor: "transparent",
-    padding: 15,
-    borderRadius: 8,
-    borderColor: "#FFF",
-    borderWidth: 1,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  manualLocationText: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  input: {
-    width: "80%",
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#FFF",
-    borderRadius: 8,
-    color: "#FFF",
-    marginVertical: 10,
-    backgroundColor: "rgba(255,255,255,0.2)",
-  },
-  suggestionsList: {
-    width: "80%",
-    maxHeight: 150,
-    backgroundColor: "#FFF",
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  suggestionItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderColor: "#EEE",
-  },
-  suggestionText: {
-    fontSize: 16,
-    color: "#333",
   },
   optionButton: {
     padding: 10,
