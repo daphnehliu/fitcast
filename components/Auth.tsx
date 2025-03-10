@@ -13,9 +13,9 @@ type AuthProps = {
 export default function Auth({ onSkip }: AuthProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState(""); // Username for sign-up
+  const [username, setUsername] = useState(""); // username for sign-up
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(true); // Default is Sign Up
+  const [isSignUp, setIsSignUp] = useState(true); // default is Sign Up
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
   const fitcast = require("../assets/images/fitcast.png");
@@ -35,7 +35,7 @@ export default function Auth({ onSkip }: AuthProps) {
     setLoading(true);
   
     try {
-      // 1: Ensure username is unique
+      // Ensure username is unique
       const { data: existingUsers, error: usernameCheckError } = await supabase
         .from("profiles")
         .select("username")
@@ -48,7 +48,7 @@ export default function Auth({ onSkip }: AuthProps) {
         return;
       }
   
-      // 2: Check if email exists using RPC
+      // check if email exists using RPC
       const { data: emailExists, error: emailCheckError } = await supabase.rpc(
         "check_email_exists",
         { user_email: email }
@@ -67,13 +67,13 @@ export default function Auth({ onSkip }: AuthProps) {
         return;
       }
   
-      // : Sign up (Skip email verification)
+      // Sign Up
       const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password,
         options: {
-          emailRedirectTo: null,
-          data: { username: username }, // Store username in metadata
+          emailRedirectTo: null, // pause email verificatio nfor now
+          data: { username: username }, // store username in metadata
         },
       });
   
@@ -82,12 +82,10 @@ export default function Auth({ onSkip }: AuthProps) {
         setLoading(false);
         return;
       }
-  
       console.log("User signed up and logged in:", data.user);
   
       let avatarUrl = ""; // Default to empty string
-  
-      // 4: Upload Profile Image if user selected one
+      // upload pfp
       if (profileImage) {
         const fileExt = profileImage.split(".").pop();
         const fileName = `${data.user.id}.${fileExt}`;
@@ -107,17 +105,17 @@ export default function Auth({ onSkip }: AuthProps) {
           const { data: publicUrlData } = supabase.storage
             .from("avatars")
             .getPublicUrl(filePath);
-          avatarUrl = publicUrlData.publicUrl; // Save URL for profile creation
+          avatarUrl = publicUrlData.publicUrl; // save URL for profile creation
         }
       }
   
-      // 5: Insert user into profiles table
+      // insert user into profiles
       if (data.user) {
         const { error: profileError } = await supabase.from("profiles").insert([
           {
-            id: data.user.id, // Matches the auth user ID
+            id: data.user.id, // matches the auth user ID
             username: username,
-            avatar_url: avatarUrl, // Use uploaded image or default
+            avatar_url: avatarUrl, //uUse uploaded image or default
           },
         ]);
   

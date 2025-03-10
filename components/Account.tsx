@@ -6,17 +6,48 @@ import { Session } from "@supabase/supabase-js";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { AppText } from "@/components/AppText";
-
+import DropDownPicker from "react-native-dropdown-picker";
 
 export default function Account({ session }: { session: Session }) {
+  // states
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  
 
+  const [open, setOpen] = useState(false);
+  const [layersOpen, setLayersOpen] = useState(false);
 
+  
+  const [coldTolerance, setColdTolerance] = useState<number | null>(null);
+  const [prefersLayers, setPrefersLayers] = useState<boolean | null>(null);
+  const [layerOptions, setLayerOptions] = useState([
+    { label: "Yes", value: true },
+    { label: "No", value: false },
+  ]);
+
+  const [items, setItems] = useState([
+    { label: "I feel cold easily", value: -1 },
+    { label: "Neutral", value: 0 },
+    { label: "I don’t feel cold easily", value: 1 },
+  ]);
+
+  const [excludedItems, setExcludedItems] = useState<string[]>([]);
+  const [excludedOpen, setExcludedOpen] = useState(false);
+
+  const [excludedOptions, setExcludedOptions] = useState([
+    { label: "Gloves", value: "Gloves" },
+    { label: "Boots", value: "Boots" },
+    { label: "Hats", value: "Hats" },
+    { label: "Scarves", value: "Scarves" },
+    { label: "Heavy Coats", value: "Heavy Coats" },
+    { label: "Wool Socks", value: "Wool Socks" },
+  ]);
+
+  // logout function
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -29,96 +60,97 @@ export default function Account({ session }: { session: Session }) {
   }
 
   useEffect(() => {
-    if (session) getProfile();
+    if (session) {
+      getUserData();
+    }
   }, [session]);
-
-  async function getProfile() {
+  
+  async function getUserData() {
     try {
       setLoading(true);
       if (!session?.user) throw new Error("No user on the session!");
   
-      const { data, error, status } = await supabase
-        .from("profiles")
-        .select(`username, avatar_url`)
-        .eq("id", session?.user.id)
-        .single();
+      console.log("User ID:", session?.user?.id);
   
-      if (error && status !== 406) {
-        throw error;
+      // Fetch Profile and Preferences Simultaneously
+      const [{ data: profileData, error: profileError }, { data: preferencesData, error: preferencesError }] = await Promise.all([
+        supabase.from("profiles").select("username, avatar_url").eq("id", session.user.id).single(),
+        supabase.from("initial_preferences").select("cold_tolerance, prefers_layers, excluded_items").eq("user_id", session.user.id).limit(1),
+      ]);
+  
+      console.log("Profile data:", profileData);
+      console.log("Preferences data:", preferencesData);
+  
+      // Handle Errors
+      if (profileError && profileError.status !== 406) throw profileError;
+      if (preferencesError && preferencesError.code !== "PGRST116") throw preferencesError;
+  
+      // Update States
+      if (profileData) {
+        setUsername(profileData.username);
+        setAvatarUrl(profileData.avatar_url);
       }
-  
-      if (data) {
-        setUsername(data.username);
-        setAvatarUrl(data.avatar_url);
+      if (preferencesData?.length > 0) {
+        const preferences = preferencesData[0]; // Get the first (and only) entry
+        setColdTolerance(preferences.cold_tolerance ?? 0); // Default to 0
+        setExcludedItems(preferences.excluded_items || []); // Load excluded items
+        setPrefersLayers(preferences.prefers_layers ?? null); // Ensure boolean or null
       }
     } catch (error) {
-      if (error instanceof Error) {
-        Alert.alert(error.message);
-      }
+      console.error("Error fetching user data:", error);
     } finally {
       setLoading(false);
     }
   }
   
-  async function updateProfile({
-    username,
-    avatar_url,
-  }: {
-    username: string;
-    avatar_url: string;
-  }) {
+  
+  async function updateAccount() {
     try {
-      setLoading(true);
       if (!session?.user) throw new Error("No user on the session!");
-
-      // 1. Fetch current metadata to avoid overwriting other fields
-      const { data: user, error: fetchError } = await supabase.auth.getUser();
-      if (fetchError) throw fetchError;
-
-      const currentMeta = user?.user?.user_metadata || {};
-
-      // 2. Update `display_name` in Supabase Auth metadata
-      const { error: authError } = await supabase.auth.updateUser({
-        data: {
-          ...currentMeta, // Preserve existing metadata
-          display_name: username, // Update display name
-        },
-      });
-
-      if (authError) {
-        throw authError;
-      }
-
-      // 3. Update the `profiles` table in Supabase
+  
+      setLoading(true);
+  
+      // Update Profile in Supabase
       const updates = {
         id: session.user.id,
         username,
-        avatar_url,
+        avatar_url: avatarUrl,
         updated_at: new Date(),
       };
-
+  
       const { error: profileError } = await supabase.from("profiles").upsert(updates);
-
-      if (profileError) {
-        throw profileError;
-      }
-
+      if (profileError) throw profileError;
+  
       console.log("Profile updated in `profiles` table");
-
-      // 4. Refresh session to reflect changes
-      const { data: refreshedSession, error: sessionError } = await supabase.auth.refreshSession();
-      if (sessionError) {
-        throw sessionError;
-      }
-
-      console.log("🔄 Session refreshed:", refreshedSession);
-
-      Alert.alert("Profile updated successfully!");
+  
+      // Update Preferences in Supabase (ensures only one row per user)
+      const { error: preferencesError } = await supabase.from("initial_preferences").upsert({
+        user_id: session.user.id,
+        cold_tolerance: coldTolerance,
+        prefers_layers: prefersLayers, // Added layering preference
+        excluded_items: excludedItems,
+      }, { onConflict: ['user_id'] }); // Ensures one entry per user
+  
+      if (preferencesError) throw preferencesError;
+  
+      console.log("Preferences updated in `initial_preferences` table");
+  
+      // Refresh session to reflect changes
+      const { error: sessionError } = await supabase.auth.refreshSession();
+      if (sessionError) throw sessionError;
+  
+      console.log("Session refreshed successfully!");
+  
+      // Show only ONE success alert
+      Alert.alert("Success", "Profile and preferences updated successfully!");
     } catch (error) {
+      console.error("Error updating account:", error);
+      // Show only ONE error alert
+      Alert.alert("Update Failed", "Could not update your profile and preferences.");
     } finally {
       setLoading(false);
     }
-  }
+  }  
 
   async function pickImage() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -167,7 +199,7 @@ export default function Account({ session }: { session: Session }) {
       setAvatarUrl(publicUrlData.publicUrl);
   
       // Update profile in database
-      await updateProfile({ username, avatar_url: publicUrlData.publicUrl });
+      await updateAccount();
   
       Alert.alert("Profile picture updated!");
     } catch (error) {
@@ -221,13 +253,59 @@ export default function Account({ session }: { session: Session }) {
         />
       </View>
 
+      <View style={[styles.inputContainer, { zIndex: layersOpen ? 1 : 2 }]}>
+        <AppText style={styles.label}>Cold Tolerance</AppText>
+        <DropDownPicker
+          open={open}
+          value={coldTolerance ?? 0}
+          items={[
+            { label: "I feel cold easily", value: -1 },
+            { label: "Neutral", value: 0 },
+            { label: "I don’t feel cold easily", value: 1 },
+          ]}
+          setOpen={setOpen}
+          setValue={setColdTolerance}
+          containerStyle={{ zIndex: layersOpen ? 1 : 2 }} // Ensures stacking order
+          style={styles.dropdown}
+        />
+      </View>
+
+
+      <View style={[styles.inputContainer, { zIndex: open ? 1 : 2 }]}>
+        <AppText style={styles.label}>Do you prefer layering?</AppText>
+        <DropDownPicker
+          open={layersOpen}
+          value={prefersLayers}
+          items={layerOptions}
+          setOpen={setLayersOpen}
+          setValue={setPrefersLayers}
+          containerStyle={{ zIndex: open ? 1 : 2 }} // Ensures stacking order
+          style={styles.dropdown}
+        />
+      </View>
+
+      <View style={[styles.inputContainer, { zIndex: open || layersOpen ? 1 : 2 }]}>
+        <AppText style={styles.label}>Excluded Clothing Items</AppText>
+        <DropDownPicker
+          open={excludedOpen}
+          value={excludedItems} // Multi-select items
+          items={excludedOptions}
+          setOpen={setExcludedOpen}
+          setValue={setExcludedItems}
+          multiple={true} // Enable multiple selections
+          min={0} // Allows no selection
+          mode="BADGE" // Shows selected items as badges
+          badgeDotColors={["#0353A4"]} // Removes the dot
+          containerStyle={{ zIndex: open || layersOpen ? 1 : 2 }}
+          style={styles.dropdown}
+        />
+      </View>
+
       {/* Update Button */}
       <View style={styles.buttonContainer}>
         <Button
           title="Update"
-          onPress={() => {
-            updateProfile({ username, avatar_url: avatarUrl });
-          }}
+          onPress={updateAccount}
           disabled={loading}
           buttonStyle={styles.button}
           containerStyle={styles.buttonContainer}
@@ -264,7 +342,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     width: "90%", // Makes input full width
     alignSelf: "center",
-    marginBottom: 12, // Space between inputs
+    alignItems: "center", // Centers everything
   },
   input: {
     borderWidth: 1, // Thin border
@@ -275,15 +353,15 @@ const styles = StyleSheet.create({
     backgroundColor: "white", // White background
   },
   buttonContainer: {
+    marginTop: 10, // Space between buttons
     width: "90%", // Full width buttons
     alignSelf: "center",
-    marginBottom: 12, // Space between buttons
   },
   button: {
     backgroundColor: "#0353A4", // Blue background
     borderRadius: 25, // Rounded edges
-    paddingVertical: 12, // Padding for better touch area
   },
+
   buttonOutline: {
     backgroundColor: "transparent", // No background for outlined button
     borderColor: "#0353A4",
@@ -321,4 +399,28 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
     fontSize: 16,
   },  
+  
+  dropdown: {
+    borderWidth: 1,
+    width: "95%",
+    borderColor: "#AEB0B5",
+    borderRadius: 8,
+    backgroundColor: "white",
+    alignSelf: "center", // Ensures it's centered
+    marginBottom: 12, // Adds space between dropdowns
+  },
+  
+  dropdownList: {
+    backgroundColor: "white",
+  },
+  label: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333", // Darker text for contrast
+    marginBottom: 5,
+    alignSelf: "flex-start", // Ensures it aligns with the input fields
+    paddingLeft: 10, // Adds slight padding for alignment
+    marginTop: 5, // Adds space between dropdowns
+  },
+  
 });
