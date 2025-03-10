@@ -3,9 +3,9 @@ import { AppText } from "@/components/AppText";
 import {
   View,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   ScrollView,
+  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -22,25 +22,39 @@ type OnboardingProps = {
 };
 
 export default function Onboarding({ onFinish }: OnboardingProps) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [coldTolerance, setColdTolerance] = useState<number | null>(null);
-  const [excludedItems, setExcludedItems] = useState<string[]>([]);
   const [prefersLayers, setPrefersLayers] = useState<boolean | null>(null);
+
+  // Define the clothing options and images.
+  const clothingOptions = ["Jacket", "T‑Shirt", "Shorts", "Pants"];
+  const clothingImages: { [key: string]: any } = {
+    Jacket: require("../assets/images/jacket.png"),
+    "T‑Shirt": require("../assets/images/t-shirt.png"),
+    Shorts: require("../assets/images/shorts.png"),
+    Pants: require("../assets/images/pants.png"),
+  };
+
+  // All clothing items are auto‑selected by default.
+  const [selectedClothes, setSelectedClothes] = useState<string[]>([...clothingOptions]);
 
   const handleNext = () => {
     setStep((prev) => prev + 1);
   };
 
-  const toggleExcludedItem = (item: string) => {
-    setExcludedItems((prev) =>
+  const toggleClothing = (item: string) => {
+    setSelectedClothes((prev) =>
       prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
     );
   };
 
   const handleFinish = () => {
+    const computedExcludedItems = clothingOptions.filter(
+      (item) => !selectedClothes.includes(item)
+    );
     onFinish({
       coldTolerance,
-      excludedItems,
+      excludedItems: computedExcludedItems,
       prefersLayers,
     });
   };
@@ -51,6 +65,27 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
       style={styles.gradientContainer}
     >
       <ScrollView contentContainerStyle={styles.contentContainer}>
+        {/* Step 0: Welcome */}
+        {step === 0 && (
+          <View style={styles.stepContainer}>
+            <Image
+              source={require("../assets/images/fitcastWhite.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <AppText style={[styles.title, { fontFamily: "Roboto-Bold" }]}>
+              Welcome to FitCast!
+            </AppText>
+            <AppText style={styles.blurb}>
+              FitCast gives you personalized outfit recommendations based on the weather. Answer a few quick questions and let us tell you what to wear!
+            </AppText>
+            <TouchableOpacity style={styles.navButton} onPress={handleNext}>
+              <AppText style={styles.navButtonText}>Get Started</AppText>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Step 1: Cold tolerance */}
         {step === 1 && (
           <View style={styles.stepContainer}>
             <AppText style={styles.title}>
@@ -69,9 +104,7 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
                 ]}
                 onPress={() => setColdTolerance(option.value)}
               >
-                <AppText style={styles.optionText}>
-                  {option.label} {coldTolerance === option.value ? "✅" : ""}
-                </AppText>
+                <AppText style={styles.optionText}>{option.label}</AppText>
               </TouchableOpacity>
             ))}
             <TouchableOpacity
@@ -87,44 +120,44 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
           </View>
         )}
 
+        {/* Step 2: Clothing selection */}
         {step === 2 && (
           <View style={styles.stepContainer}>
             <AppText style={styles.title}>
-              Select any clothing items you don't wear
+              Select all clothing items that you wear
             </AppText>
-            <FlatList
-              data={[
-                "Jacket",
-                "Sweater",
-                "Hoodie",
-                "Jeans",
-                "Shorts",
-                "T-Shirt",
-                "Gloves",
-                "Scarf",
-                "Boots",
-              ]}
-              keyExtractor={(item) => item}
-              scrollEnabled={false} // <-- Disable internal scrolling
-              renderItem={({ item }) => (
-                <TouchableOpacity onPress={() => toggleExcludedItem(item)}>
-                  <AppText
+            <View style={styles.clothingContainer}>
+              {clothingOptions.map((item) => (
+                <View key={item} style={styles.clothingItemContainer}>
+                  <TouchableOpacity
+                    onPress={() => toggleClothing(item)}
                     style={[
-                      styles.optionButton,
-                      excludedItems.includes(item) && styles.selectedOption,
+                      styles.clothingItem,
+                      selectedClothes.includes(item) && styles.selectedOption,
                     ]}
                   >
-                    {item} {excludedItems.includes(item) ? "🚫" : ""}
-                  </AppText>
-                </TouchableOpacity>
-              )}
-            />
+                    <Image
+                      source={clothingImages[item]}
+                      style={styles.clothingImage}
+                      resizeMode="contain"
+                    />
+                    {selectedClothes.includes(item) && (
+                      <View style={styles.checkMarkContainer}>
+                        <AppText style={styles.checkMark}>✓</AppText>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  <AppText style={styles.clothingLabel}>{item}</AppText>
+                </View>
+              ))}
+            </View>
             <TouchableOpacity style={styles.navButton} onPress={handleNext}>
               <AppText style={styles.navButtonText}>Next</AppText>
             </TouchableOpacity>
           </View>
         )}
 
+        {/* Step 3: Layering preference */}
         {step === 3 && (
           <View style={styles.stepContainer}>
             <AppText style={styles.title}>
@@ -137,9 +170,7 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
               ]}
               onPress={() => setPrefersLayers(true)}
             >
-              <AppText style={styles.optionText}>
-                Yes {prefersLayers === true ? "✅" : ""}
-              </AppText>
+              <AppText style={styles.optionText}>Yes</AppText>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -148,9 +179,7 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
               ]}
               onPress={() => setPrefersLayers(false)}
             >
-              <AppText style={styles.optionText}>
-                No {prefersLayers === false ? "✅" : ""}
-              </AppText>
+              <AppText style={styles.optionText}>No</AppText>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -175,7 +204,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flexGrow: 1,
-    justifyContent: "center", // Center vertically
+    justifyContent: "center",
     alignItems: "center",
     padding: 20,
   },
@@ -184,9 +213,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 30,
   },
+  logo: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
+  },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 27,
+    // Use a bold font variant if needed. Adjust "Roboto-Bold" to match your setup.
+    // fontWeight may not work if your font doesn't support it.
+    fontFamily: "Roboto-Bold",
+    marginBottom: 10,
+    textAlign: "center",
+    color: "#FFF",
+  },
+  blurb: {
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: "center",
+    color: "#FFF",
+  },
+  subtitle: {
+    fontSize: 18,
     marginBottom: 20,
     textAlign: "center",
     color: "#FFF",
@@ -202,8 +250,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.3)",
   },
   selectedOption: {
-    backgroundColor: "#FEEA7B",
-    borderColor: "#FBCB0A",
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    borderWidth: 2,
+    borderColor: "#B0E7F0",
   },
   optionText: {
     fontSize: 18,
@@ -222,6 +271,53 @@ const styles = StyleSheet.create({
   navButtonText: {
     color: "#FFF",
     fontSize: 18,
+    fontWeight: "bold",
+  },
+  clothingContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  clothingItemContainer: {
+    alignItems: "center",
+    margin: 10,
+  },
+  clothingItem: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    overflow: "hidden",
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    borderWidth: 1,
+    borderColor: "#FFF",
+  },
+  clothingImage: {
+    width: 70,
+    height: 70,
+  },
+  clothingLabel: {
+    marginTop: 5,
+    fontSize: 14,
+    color: "#FFF",
+    textAlign: "center",
+  },
+  checkMarkContainer: {
+    position: "absolute",
+    top: 5,
+    right: 5,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#4A90E2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkMark: {
+    fontSize: 12,
+    color: "#FFF",
     fontWeight: "bold",
   },
 });
