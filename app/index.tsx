@@ -37,36 +37,27 @@ export default function Index() {
       <Onboarding
         onFinish={async (prefs) => {
           try {
-            // --- Prepare data for the `profiles` table ---
-            // You can store just the city, or store coordinates as well.
-            // Below, we just store the city name in the `location` column.
-            const cityName = prefs.location?.city ?? null;
-
-            // Upsert the profile to mark onboarding as complete, including the location.
-            const { data: profileData, error: profileError } = await supabase
+            // Upsert the profile to mark onboarding as complete.
+            const { data, error } = await supabase
               .from("profiles")
-              .upsert({
-                id: session.user.id,
-                onboarding_completed: true,
-                location: cityName, // <--- Add the location here
-              })
+              .upsert({ id: session.user.id, onboarding_completed: true })
               .select()
               .single();
 
-            if (profileError) {
-              console.error("Index: Error updating onboarding status:", profileError);
+            if (error) {
+              console.error("Index: Error updating onboarding status:", error);
               return;
             }
 
-            console.log("Index: Profile after onboarding update:", profileData);
+            console.log("Index: Profile after onboarding update:", data);
 
-            // Upsert user preferences in the `initial_preferences` table.
+            // Upsert user preferences.
             const { error: prefError } = await supabase
               .from("initial_preferences")
               .upsert({
                 user_id: session.user.id,
                 cold_tolerance: prefs.coldTolerance,
-                items: prefs.items, // now using the selected items array
+                excluded_items: prefs.excludedItems,
                 prefers_layers: prefs.prefersLayers,
               });
 
@@ -78,8 +69,7 @@ export default function Index() {
               return;
             }
 
-            // Update our local state with the new profile data
-            setProfile(profileData);
+            setProfile(data);
           } catch (err) {
             console.error("Index: Error finalizing onboarding:", err);
           }
