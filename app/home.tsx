@@ -42,7 +42,7 @@ export default function Home({ session }: { session: Session }) {
     setGradientColors(getGradientColors(weatherDesc, isNight));
   }, [weatherDesc, isNight]);
 
-  const placeholder = require("../assets/images/Rectangle 46.png"); // remove this eventually
+  const placeholder = require("../assets/images/cloud.png"); // remove this eventually
   const fitcast = require("../assets/images/fitcastWhite.png");
 
   const topChoices = ["shirt", "light jacket", "thick jacket"];
