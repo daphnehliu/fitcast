@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
-import { StyleSheet, View, Alert, Text, Image, TouchableOpacity } from "react-native";
+import { StyleSheet, View, Alert, Text, Image, TouchableOpacity, ScrollView } from "react-native";
 import { Button, Input } from "@rneui/themed";
 import { Session } from "@supabase/supabase-js";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { AppText } from "@/components/AppText";
 import DropDownPicker from "react-native-dropdown-picker";
+DropDownPicker.setListMode("SCROLLVIEW")
+import Ionicons from "@expo/vector-icons/Ionicons";
+import CurrentLocation from "@/components/CurrentLocation";
+
 
 export default function Account({ session }: { session: Session }) {
   // states
@@ -16,6 +20,10 @@ export default function Account({ session }: { session: Session }) {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [location, setLocation] = useState<string>("No location set"); // Location from Supabase
+  const [tempLocation, setTempLocation] = useState<string | null>(null); // Temporary location before saving
+  const [showLocationModal, setShowLocationModal] = useState(false); // Controls location modal visibility
+
   
 
   const [open, setOpen] = useState(false);
@@ -35,16 +43,14 @@ export default function Account({ session }: { session: Session }) {
     { label: "I don’t feel cold easily", value: 1 },
   ]);
 
-  const [excludedItems, setExcludedItems] = useState<string[]>([]);
-  const [excludedOpen, setExcludedOpen] = useState(false);
-
-  const [excludedOptions, setExcludedOptions] = useState([
-    { label: "Gloves", value: "Gloves" },
-    { label: "Boots", value: "Boots" },
-    { label: "Hats", value: "Hats" },
-    { label: "Scarves", value: "Scarves" },
-    { label: "Heavy Coats", value: "Heavy Coats" },
-    { label: "Wool Socks", value: "Wool Socks" },
+  const [clothingItems, setClothingItems] = useState<string[]>([]);
+  const [clothingOpen, setClothingOpen] = useState(false);
+  const [clothingOptions, setClothingOptions] = useState([
+    { label: "Heavy Jacket", value: "Heavy Jacket" },
+    { label: "T‑Shirt", value: "T‑Shirt" },
+    { label: "Shorts", value: "Shorts" },
+    { label: "Pants", value: "Pants" },
+    { label: "Light Jacket", value: "Light Jacket" },
   ]);
 
   // logout function
@@ -58,6 +64,12 @@ export default function Account({ session }: { session: Session }) {
     router.replace("/");
     router.dismissAll(); // Ensure all previous screens are removed
   }
+
+  useEffect(() => {
+    if (router.query?.newLocation) {
+      setTempLocation(router.query.newLocation as string);
+    }
+  }, [router.query?.newLocation]);  
 
   useEffect(() => {
     if (session) {
@@ -74,8 +86,8 @@ export default function Account({ session }: { session: Session }) {
   
       // Fetch Profile and Preferences Simultaneously
       const [{ data: profileData, error: profileError }, { data: preferencesData, error: preferencesError }] = await Promise.all([
-        supabase.from("profiles").select("username, avatar_url").eq("id", session.user.id).single(),
-        supabase.from("initial_preferences").select("cold_tolerance, prefers_layers, excluded_items").eq("user_id", session.user.id).limit(1),
+        supabase.from("profiles").select("username, avatar_url, location").eq("id", session.user.id).single(),
+        supabase.from("initial_preferences").select("cold_tolerance, prefers_layers, items").eq("user_id", session.user.id).limit(1),
       ]);
   
       console.log("Profile data:", profileData);
@@ -89,11 +101,12 @@ export default function Account({ session }: { session: Session }) {
       if (profileData) {
         setUsername(profileData.username);
         setAvatarUrl(profileData.avatar_url);
+        setLocation(profileData.location || "No location set");
       }
       if (preferencesData?.length > 0) {
         const preferences = preferencesData[0]; // Get the first (and only) entry
         setColdTolerance(preferences.cold_tolerance ?? 0); // Default to 0
-        setExcludedItems(preferences.excluded_items || []); // Load excluded items
+        setClothingItems(preferences.items || []); // Load clothing items
         setPrefersLayers(preferences.prefers_layers ?? null); // Ensure boolean or null
       }
     } catch (error) {
@@ -115,6 +128,7 @@ export default function Account({ session }: { session: Session }) {
         id: session.user.id,
         username,
         avatar_url: avatarUrl,
+        location: tempLocation || location, // Save temp location if changed
         updated_at: new Date(),
       };
   
@@ -128,7 +142,7 @@ export default function Account({ session }: { session: Session }) {
         user_id: session.user.id,
         cold_tolerance: coldTolerance,
         prefers_layers: prefersLayers, // Added layering preference
-        excluded_items: excludedItems,
+        items: clothingItems,
       }, { onConflict: ['user_id'] }); // Ensures one entry per user
   
       if (preferencesError) throw preferencesError;
@@ -142,7 +156,7 @@ export default function Account({ session }: { session: Session }) {
       console.log("Session refreshed successfully!");
   
       // Show only ONE success alert
-      Alert.alert("Success", "Profile and preferences updated successfully!");
+      Alert.alert("Updated!", "Your profile and preferences updated successfully :)");
     } catch (error) {
       console.error("Error updating account:", error);
       // Show only ONE error alert
@@ -208,122 +222,147 @@ export default function Account({ session }: { session: Session }) {
       setUploading(false);
     }
   }
-  
+
+  function handleUpdateLocation() {
+    setShowLocationModal(true); // Open modal instead of navigating
+  }  
 
   return (
-    <View style={styles.container}>
-      {/* Title */}
-      <Text style={styles.title}>Hello, {username || "User"}!</Text>
-
-      <View style={styles.imagePicker}>
-        <Image
-          source={avatarUrl ? { uri: avatarUrl } : require("../assets/images/default-avatar.png")}
-          style={styles.profileImage}
+    <View style={styles.fullScreen}>
+      {showLocationModal ? (
+        <CurrentLocation
+          onClose={() => setShowLocationModal(false)}
+          onLocationSelect={(newLocation) => {
+            setTempLocation(newLocation); // Store only the city name
+            setShowLocationModal(false);
+          }}
         />
-        <TouchableOpacity onPress={pickImage}>
-          <AppText style={styles.imagePickerText}>Change Profile Picture</AppText>
-        </TouchableOpacity>
-      </View>
+      ) : (
+        <ScrollView >
+          <View style={styles.container}>
+            {/* Title */}
+            <Text style={styles.title}>Hello, {username || "User"}!</Text>
+
+            <View style={styles.imagePicker}>
+              <Image
+                source={avatarUrl ? { uri: avatarUrl } : require("../assets/images/default-avatar.png")}
+                style={styles.profileImage}
+              />
+              <TouchableOpacity onPress={pickImage}>
+                <AppText style={styles.imagePickerText}>Change Profile Picture</AppText>
+              </TouchableOpacity>
+            </View>
 
 
 
-      {/* Input Fields */}
-      
-      {/* Email (Read-Only) */}
-      <View style={styles.inputContainer}>
-        <Input
-          placeholder="Email"
-          value={session?.user?.email || ""}
-          autoCapitalize="none"
-          inputContainerStyle={styles.input} 
-          placeholderTextColor="#AEB0B5"
-          disabled={true} // Read-only email
-        />
-      </View>
+            {/* Input Fields */}
+            
+            {/* Email (Read-Only) */}
+            <View style={styles.inputContainer}>
+              <Input
+                placeholder="Email"
+                value={session?.user?.email || ""}
+                autoCapitalize="none"
+                inputContainerStyle={styles.input} 
+                placeholderTextColor="#AEB0B5"
+                disabled={true} // Read-only email
+              />
+            </View>
 
-      {/* Username (Editable) */}
-      <View style={styles.inputContainer}>
-        <Input
-          placeholder="Username"
-          value={username || ""}
-          onChangeText={(text) => setUsername(text)}
-          autoCapitalize="none"
-          inputContainerStyle={styles.input}
-          placeholderTextColor="#AEB0B5"
-        />
-      </View>
+            {/* Username (Editable) */}
+            <View style={styles.inputContainer}>
+              <Input
+                placeholder="Username"
+                value={username || ""}
+                onChangeText={(text) => setUsername(text)}
+                autoCapitalize="none"
+                inputContainerStyle={styles.input}
+                placeholderTextColor="#AEB0B5"
+              />
+            </View>
 
-      <View style={[styles.inputContainer, { zIndex: layersOpen ? 1 : 2 }]}>
-        <AppText style={styles.label}>Cold Tolerance</AppText>
-        <DropDownPicker
-          open={open}
-          value={coldTolerance ?? 0}
-          items={[
-            { label: "I feel cold easily", value: -1 },
-            { label: "Neutral", value: 0 },
-            { label: "I don’t feel cold easily", value: 1 },
-          ]}
-          setOpen={setOpen}
-          setValue={setColdTolerance}
-          containerStyle={{ zIndex: layersOpen ? 1 : 2 }} // Ensures stacking order
-          style={styles.dropdown}
-        />
-      </View>
+            <View style={styles.inputContainer}>
+              <TouchableOpacity onPress={handleUpdateLocation} style={styles.locationBox}>
+                <Ionicons name="location-outline" size={20} color="#0353A4" style={styles.locationIcon} />
+                <Text style={styles.locationText}>{tempLocation || location}</Text>
+                <Text style={styles.updateText}>Change</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.inputContainer, { zIndex: layersOpen ? 1 : 2 }]}>
+              <AppText style={styles.label}>Cold Tolerance</AppText>
+              <DropDownPicker
+                open={open}
+                value={coldTolerance ?? 0}
+                items={[
+                  { label: "I feel cold easily", value: -1 },
+                  { label: "Neutral", value: 0 },
+                  { label: "I don’t feel cold easily", value: 1 },
+                ]}
+                setOpen={setOpen}
+                setValue={setColdTolerance}
+                containerStyle={{ zIndex: layersOpen ? 1 : 2 }} // Ensures stacking order
+                style={styles.dropdown}
+              />
+            </View>
 
 
-      <View style={[styles.inputContainer, { zIndex: open ? 1 : 2 }]}>
-        <AppText style={styles.label}>Do you prefer layering?</AppText>
-        <DropDownPicker
-          open={layersOpen}
-          value={prefersLayers}
-          items={layerOptions}
-          setOpen={setLayersOpen}
-          setValue={setPrefersLayers}
-          containerStyle={{ zIndex: open ? 1 : 2 }} // Ensures stacking order
-          style={styles.dropdown}
-        />
-      </View>
+            <View style={[styles.inputContainer, { zIndex: open ? 1 : 2 }]}>
+              <AppText style={styles.label}>Do you prefer layering?</AppText>
+              <DropDownPicker
+                open={layersOpen}
+                value={prefersLayers}
+                items={layerOptions}
+                setOpen={setLayersOpen}
+                setValue={setPrefersLayers}
+                containerStyle={{ zIndex: open ? 1 : 2 }} // Ensures stacking order
+                style={styles.dropdown}
+              />
+            </View>
 
-      <View style={[styles.inputContainer, { zIndex: open || layersOpen ? 1 : 2 }]}>
-        <AppText style={styles.label}>Excluded Clothing Items</AppText>
-        <DropDownPicker
-          open={excludedOpen}
-          value={excludedItems} // Multi-select items
-          items={excludedOptions}
-          setOpen={setExcludedOpen}
-          setValue={setExcludedItems}
-          multiple={true} // Enable multiple selections
-          min={0} // Allows no selection
-          mode="BADGE" // Shows selected items as badges
-          badgeDotColors={["#0353A4"]} // Removes the dot
-          containerStyle={{ zIndex: open || layersOpen ? 1 : 2 }}
-          style={styles.dropdown}
-        />
-      </View>
+            <View style={[styles.inputContainer, { zIndex: open || layersOpen ? 1 : 2 }]}>
+              <AppText style={styles.label}>Clothing Items</AppText>
+              <DropDownPicker
+                open={clothingOpen}
+                value={clothingItems} // Multi-select items
+                items={clothingOptions}
+                setOpen={setClothingOpen}
+                setValue={setClothingItems}
+                multiple={true} // Enable multiple selections
+                min={0} // Allows no selection
+                mode="BADGE" // Shows selected items as badges
+                badgeDotColors={["#0353A4"]} // Removes the dot
+                containerStyle={{ zIndex: open || layersOpen ? 1 : 2 }}
+                style={styles.dropdown}
+              />
+            </View>
 
-      {/* Update Button */}
-      <View style={styles.buttonContainer}>
-        <Button
-          title="Update"
-          onPress={updateAccount}
-          disabled={loading}
-          buttonStyle={styles.button}
-          containerStyle={styles.buttonContainer}
-          titleStyle={styles.buttonText}
-        />
-      </View>
+            {/* Update Button */}
+            <View style={styles.buttonContainer}>
+              <Button
+                title="Update"
+                onPress={updateAccount}
+                disabled={loading}
+                buttonStyle={styles.button}
+                containerStyle={styles.buttonContainer}
+                titleStyle={styles.buttonText}
+              />
+            </View>
 
-      {/* Sign Out Button */}
-      <View style={styles.buttonContainer}>
-        <Button
-          title="Sign Out"
-          onPress={handleLogout}
-          buttonStyle={styles.buttonOutline}
-          containerStyle={styles.buttonContainer}
-          titleStyle={styles.buttonOutlineText}
-        />
-      </View>
-    </View>
+            {/* Sign Out Button */}
+            <View style={styles.buttonContainer}>
+              <Button
+                title="Sign Out"
+                onPress={handleLogout}
+                buttonStyle={styles.buttonOutline}
+                containerStyle={styles.buttonContainer}
+                titleStyle={styles.buttonOutlineText}
+              />
+            </View>
+          </View>
+        </ScrollView>   
+        )}
+    </View> 
   );
 }
 
@@ -422,5 +461,48 @@ const styles = StyleSheet.create({
     paddingLeft: 10, // Adds slight padding for alignment
     marginTop: 5, // Adds space between dropdowns
   },
+  
+  locationBox: {
+    width: "95%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#AEB0B5",
+    borderRadius: 8,
+    backgroundColor: "white",
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    marginBottom: 12,
+  },
+  
+  locationIcon: {
+    marginRight: 10,
+  },
+  
+  locationText: {
+    flex: 1, // Ensures text takes up remaining space
+    fontSize: 16,
+    color: "#333",
+  },
+  
+  updateText: {
+    fontSize: 16,
+    color: "#0353A4",
+    fontWeight: "bold",
+  },
+
+  fullScreen: {
+    flex: 1, 
+    backgroundColor: "white", // Ensures modal background is clean
+  },
+  
+  contentContainer: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingBottom: 20,
+  },
+  
   
 });
