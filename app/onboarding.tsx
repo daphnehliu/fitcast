@@ -27,12 +27,13 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
   const [prefersLayers, setPrefersLayers] = useState<boolean | null>(null);
 
   // Define the clothing options and images.
-  const clothingOptions = ["Jacket", "T‑Shirt", "Shorts", "Pants"];
+  const clothingOptions = ["Heavy Jacket", "T‑Shirt", "Shorts", "Pants", "Light Jacket"];
   const clothingImages: { [key: string]: any } = {
-    Jacket: require("../assets/images/jacket.png"),
+    "Heavy Jacket": require("../assets/images/jacket.png"),
     "T‑Shirt": require("../assets/images/t-shirt.png"),
     Shorts: require("../assets/images/shorts.png"),
     Pants: require("../assets/images/pants.png"),
+    "Light Jacket": require("../assets/images/light-jacket.png"),
   };
 
   // All clothing items are auto‑selected by default.
