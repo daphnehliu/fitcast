@@ -21,6 +21,10 @@ export const WeatherContext = createContext<WeatherContextType | undefined>(
   undefined
 );
 
+const topChoices = ["shirt", "light jacket", "thick jacket"];
+const bottomChoices = ["shorts", "pants"];
+const accessories = ["umbrella"];
+
 export const WeatherProvider = ({ children }: { children: ReactNode }) => {
   const [weather, setWeather] = useState<any>(null);
   const [isNight, setIsNight] = useState(false);
@@ -76,11 +80,18 @@ export const WeatherProvider = ({ children }: { children: ReactNode }) => {
     low: number
   ): Promise<string> => {
     try {
-      const prompt = `The current weather is described as "${description}". The temperature is ${temp}ºF, with 
-      a high of ${high}ºF and a low of ${low}ºF. Provide a short clothing recommendation including specific 
-      pieces of clothing to prepare for the weather. Don't give any reasoning and don't add any stylistic elements.
-      Something like "Dress light with a short sleeve shirt and pants" or "Bundle up with a big jacket" is great. 
-      Use 10 or less tokens, proper grammar, and finish your thought`;
+      const tempDetails = `The current weather is described as "${description}". The temperature is ${temp}ºF, with a high of ${high}ºF and a low of ${low}ºF. `;
+      const directions =
+        "Provide a short clothing recommendation for the weather including one element from" +
+        topChoices +
+        "one element from " +
+        bottomChoices +
+        " and any elements from " +
+        accessories +
+        " if needed. Don't give reasoning and dont add any stylistic elements. Finish your thought in 15 or less tokens using a full sentence with proper grammar. Don't mention accessories unless they are needed";
+      const examples =
+        'Something like "Dress light with a shirt and shorts" or "Bundle up with a big jacket and long pants and carry an umbrella" is great. Use 10 or less tokens, proper grammar, and finish your thought';
+      const prompt = directions + tempDetails;
 
       const response = await fetch(
         "https://api.openai.com/v1/chat/completions",
@@ -99,7 +110,7 @@ export const WeatherProvider = ({ children }: { children: ReactNode }) => {
               },
               { role: "user", content: prompt },
             ],
-            max_tokens: 10,
+            max_tokens: 15,
           }),
         }
       );

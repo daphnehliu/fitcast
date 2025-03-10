@@ -42,10 +42,38 @@ export default function Home({ session }: { session: Session }) {
     setGradientColors(getGradientColors(weatherDesc, isNight));
   }, [weatherDesc, isNight]);
 
-  const jacket = require("../assets/images/jacket.png");
-  const shirt = require("../assets/images/t-shirt.png");
-  const pants = require("../assets/images/pants.png");
+  const placeholder = require("../assets/images/Rectangle 46.png"); // remove this eventually
   const fitcast = require("../assets/images/fitcastWhite.png");
+
+  const topChoices = ["shirt", "light jacket", "thick jacket"];
+  const topMap = {
+    shirt: require("../assets/images/t-shirt.png"),
+    "light jacket": require("../assets/images/light-jacket.png"),
+    "heavy jacket": require("../assets/images/jacket.png"),
+  };
+  const bottomChoices = ["shorts", "pants"];
+  const bottomMap = {
+    shorts: require("../assets/images/shorts.png"),
+    pants: require("../assets/images/pants.png"),
+  };
+  const accessories = ["umbrella"];
+
+  function extractClothingItems(fitcastLabel: string) {
+    const selectedTop =
+      topChoices.find((item) => fitcastLabel.includes(item)) || null;
+    const selectedBottom =
+      bottomChoices.find((item) => fitcastLabel.includes(item)) || null;
+    const selectedAccessory =
+      accessories.find((item) => fitcastLabel.includes(item)) || null;
+
+    return {
+      top: selectedTop,
+      bottom: selectedBottom,
+      accessory: selectedAccessory,
+    };
+  }
+
+  const { top, bottom, accessory } = extractClothingItems(fitcastLabel);
 
   if (!weather) return <Text>Loading...</Text>;
 
@@ -76,19 +104,15 @@ export default function Home({ session }: { session: Session }) {
           <View style={styles.fitcastBoxLight}>
             <View style={styles.fitcastLabel}>
               <View>
-                <AppText style={styles.weatherDetailsText}>
-                  Now: dress light
-                </AppText>
-                <Image source={shirt} style={styles.image} />
-                <Image source={pants} style={styles.image} />
+                <AppText style={styles.weatherDetailsText}>Now:</AppText>
+                <Image source={topMap[top]} style={styles.image} />
+                <Image source={bottomMap[bottom]} style={styles.image} />
               </View>
 
               <View>
-                <AppText style={styles.weatherDetailsText}>
-                  Later: layer up
-                </AppText>
-                <Image source={jacket} style={styles.image} />
-                <Image source={pants} style={styles.image} />
+                <AppText style={styles.weatherDetailsText}>Later:</AppText>
+                <Image source={placeholder} style={styles.image} />
+                <Image source={placeholder} style={styles.image} />
               </View>
             </View>
           </View>
