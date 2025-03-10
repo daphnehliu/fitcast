@@ -37,7 +37,7 @@ export const WeatherProvider = ({ children }: { children: ReactNode }) => {
       try {
         const apiKey = "f076a815a1cbbdb3f228968604fdcc7a";
         const response = await fetch(
-          `http://localhost:3000/weather`
+          `http://api.openweathermap.org/data/2.5/weather?q=Palo%20Alto&appid=${apiKey}&units=imperial`
         );
         const data = await response.json();
         setWeather(data);
@@ -94,7 +94,7 @@ export const WeatherProvider = ({ children }: { children: ReactNode }) => {
       const prompt = directions + tempDetails;
 
       const response = await fetch(
-        "http://localhost:3000/openai",
+        "https://api.openai.com/v1/chat/completions",
         {
           method: "POST",
           headers: {
@@ -143,7 +143,7 @@ export const WeatherProvider = ({ children }: { children: ReactNode }) => {
                 Remove quotation marks from your reponses. Feel free to add extra details about how thick the clothing item should be. Use proper grammar and full sentences`;
 
         const response = await fetch(
-          "http://localhost:3000/openai",
+          "https://api.openai.com/v1/chat/completions",
           {
             method: "POST",
             headers: {
