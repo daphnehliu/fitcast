@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import React, { useState, useEffect } from "react";
 import { Session } from "@supabase/supabase-js";
 import { useWeather } from "@/context/WeatherContext";
+import { useTimeline } from "@/context/TimelineContext";
 
 const getGradientColors = (
   weatherDesc: string,
@@ -31,9 +32,13 @@ export default function Home({ session }: { session: Session }) {
   const router = useRouter();
   const { weather, isNight, weatherDesc, fitcastDescription, fitcastLabel } =
     useWeather();
+  const { fitcastForecast } = useTimeline();
   const [gradientColors, setGradientColors] = useState<
     [string, string, ...string[]]
   >(["#4DC8E7", "#B0E7F0"]);
+  const [now, setNow] = useState<Record<string, any>>({});
+  const [later, setLater] = useState<Record<string, any>>({});
+  const [laterTime, setLaterTime] = useState<number>();
 
   const userId = session.user?.id;
   const username = session?.user?.user_metadata?.display_name || "No Name";
@@ -42,22 +47,25 @@ export default function Home({ session }: { session: Session }) {
     setGradientColors(getGradientColors(weatherDesc, isNight));
   }, [weatherDesc, isNight]);
 
-  const placeholder = require("../assets/images/cloud.png"); // remove this eventually
   const fitcast = require("../assets/images/fitcastWhite.png");
   const yourFitcast = require("../assets/images/your-fitcast-white.png");
 
   const topChoices = ["shirt", "light jacket", "thick jacket"];
+  const bottomChoices = ["shorts", "pants"];
+  const accessories = ["umbrella"];
+
   const topMap = {
     shirt: require("../assets/images/t-shirt.png"),
     "light jacket": require("../assets/images/light-jacket.png"),
     "heavy jacket": require("../assets/images/jacket.png"),
   };
-  const bottomChoices = ["shorts", "pants"];
   const bottomMap = {
     shorts: require("../assets/images/shorts.png"),
     pants: require("../assets/images/pants.png"),
   };
-  const accessories = ["umbrella"];
+  const accessoryMap = {
+    umbrella: require("../assets/images/umbrella.png"),
+  };
 
   function extractClothingItems(fitcastLabel: string) {
     const selectedTop =
@@ -74,7 +82,29 @@ export default function Home({ session }: { session: Session }) {
     };
   }
 
-  const { top, bottom, accessory } = extractClothingItems(fitcastLabel);
+  const convertTo12Hour = (time) => {
+    let hour = parseInt(time, 10);
+    let suffix = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12 || 12;
+    return `${hour} ${suffix}`;
+  };
+
+  useEffect(() => {
+    if (fitcastForecast === "Loading...") return;
+
+    const now = extractClothingItems(fitcastLabel);
+    setNow(now);
+
+    const later = extractClothingItems(fitcastForecast.split("-")[3]);
+    setLater(later);
+
+    const time = convertTo12Hour(
+      fitcastForecast.split("-")[3].split(":")[0] +
+        ":" +
+        fitcastForecast.split(":")[1]
+    );
+    setLaterTime(time);
+  }, [fitcastForecast]);
 
   if (!weather) return <Text>Loading...</Text>;
 
@@ -103,14 +133,19 @@ export default function Home({ session }: { session: Session }) {
             <View style={styles.fitcastLabel}>
               <View>
                 <AppText style={styles.weatherDetailsText}>Now:</AppText>
-                <Image source={topMap[top]} style={styles.image} />
-                <Image source={bottomMap[bottom]} style={styles.image} />
+                <Image source={topMap[now["top"]]} style={styles.image} />
+                <Image source={bottomMap[now["bottom"]]} style={styles.image} />
               </View>
 
               <View>
-                <AppText style={styles.weatherDetailsText}>Later:</AppText>
-                <Image source={placeholder} style={styles.image} />
-                <Image source={placeholder} style={styles.image} />
+                <AppText style={styles.weatherDetailsText}>
+                  Later: {laterTime}
+                </AppText>
+                <Image source={topMap[later["top"]]} style={styles.image} />
+                <Image
+                  source={bottomMap[later["bottom"]]}
+                  style={styles.image}
+                />
               </View>
             </View>
           </View>
