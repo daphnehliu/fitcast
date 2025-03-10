@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   TextInput,
@@ -16,9 +16,32 @@ import { AppText } from "@/components/AppText";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+const getGradientColors = (
+  weatherDesc: string,
+  isNight: boolean
+): [string, string, ...string[]] => {
+  if (!weatherDesc) return ["#4DC8E7", "#B0E7F0"];
+  ``;
+  if (weatherDesc.includes("Clear")) {
+    return isNight ? ["#0B1A42", "#2E4B7A"] : ["#4D92D9", "#B0E7F0"];
+  } else if (weatherDesc.includes("Cloud")) {
+    return isNight ? ["#2F3E46", "#4B6584"] : ["#B0B0B0", "#90A4AE"];
+  } else if (weatherDesc.includes("Rain") || weatherDesc.includes("Snow")) {
+    return isNight ? ["#1B262C", "#0F4C75"] : ["#A0ADB9", "#697582"];
+  } else if (weatherDesc.includes("Thunderstorm")) {
+    return ["#1F1C2C", "#928DAB"];
+  } else if (isNight) {
+    return ["#0B1A42", "#2E4B7A"];
+  }
+
+  return ["#4DC8E7", "#B0E7F0"];
+};
+
 export default function PackingInput() {
   const router = useRouter();
-
+  const [gradientColors, setGradientColors] = useState<
+    [string, string, ...string[]]
+  >(["#4DC8E7", "#B0E7F0"]);
   const [destination, setDestination] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -28,6 +51,40 @@ export default function PackingInput() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [weather, setWeather] = useState<any>(null);
+  const [isNight, setIsNight] = useState(false);
+  const [weatherDesc, setWeatherDesc] = useState("");
+  const [fitcastDescription, setFitcastDescription] = useState("Loading...");
+
+  useEffect(() => {
+    setGradientColors(getGradientColors(weatherDesc, isNight));
+  }, [weatherDesc, isNight]);
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const apiKey = "f076a815a1cbbdb3f228968604fdcc7a";
+        const response = await fetch(
+          `http://api.openweathermap.org/data/2.5/weather?q=Palo%20Alto&appid=${apiKey}&units=imperial`
+        );
+        const data = await response.json();
+        setWeather(data);
+
+        const currentHour = new Date().getHours();
+        setIsNight(currentHour < 6 || currentHour > 18);
+        const formattedDesc = data.weather[0].description
+          .toLowerCase()
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+        setWeatherDesc(formattedDesc);
+      } catch (error) {
+        console.error("Error fetching weather: ", error);
+      }
+    };
+
+    fetchWeather();
+  }, []);
 
   const searchCities = async () => {
     if (searchText.length < 3) {
@@ -90,7 +147,7 @@ export default function PackingInput() {
   };
 
   return (
-    <LinearGradient colors={["#4DC8E7", "#B0E7F0"]} style={styles.gradient}>
+    <LinearGradient colors={gradientColors} style={styles.gradient}>
       <View style={styles.container}>
         <AppText type="title" style={styles.header}>
           Plan Your Packing
@@ -153,12 +210,12 @@ export default function PackingInput() {
         <DateTimePickerModal
           isVisible={isStartDatePickerVisible}
           mode="date"
-          minimumDate={new Date()}
+          minimumDate={new Date()} // ✅ Ensures start date is today or later
+          maximumDate={new Date(Date.now() + 16 * 24 * 60 * 60 * 1000)} // ✅ Ensures start date is within 16 days from today
           onConfirm={async (date) => {
-            // ✅ Mark function as async
             try {
               setStartDate(date);
-              await AsyncStorage.setItem("start_date", date.toISOString()); // ✅ Convert date to string
+              await AsyncStorage.setItem("start_date", date.toISOString());
               setStartDatePickerVisible(false);
             } catch (error) {
               console.error("Error saving start date:", error);
@@ -166,7 +223,6 @@ export default function PackingInput() {
           }}
           onCancel={() => setStartDatePickerVisible(false)}
         />
-
         <AppText style={styles.label}>End Date</AppText>
         <Button
           title={endDate ? endDate.toDateString() : "Pick End Date"}
@@ -175,12 +231,12 @@ export default function PackingInput() {
         <DateTimePickerModal
           isVisible={isEndDatePickerVisible}
           mode="date"
-          minimumDate={startDate || new Date()}
+          minimumDate={startDate || new Date()} // ✅ Ensures end date is after start date
+          maximumDate={new Date(Date.now() + 16 * 24 * 60 * 60 * 1000)} // ✅ Ensures end date is within 16 days from today
           onConfirm={async (date) => {
-            // ✅ Mark function as async
             try {
               setEndDate(date);
-              await AsyncStorage.setItem("end_date", date.toISOString()); // ✅ Fix key name
+              await AsyncStorage.setItem("end_date", date.toISOString());
               setEndDatePickerVisible(false);
             } catch (error) {
               console.error("Error saving end date:", error);
@@ -188,6 +244,7 @@ export default function PackingInput() {
           }}
           onCancel={() => setEndDatePickerVisible(false)}
         />
+
         <Button title="Get Packing List" onPress={handleSubmit} />
       </View>
     </LinearGradient>
