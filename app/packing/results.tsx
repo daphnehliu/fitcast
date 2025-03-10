@@ -14,6 +14,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppText } from "@/components/AppText";
 
 const { width } = Dimensions.get("window");
+const API_KEY = "f076a815a1cbbdb3f228968604fdcc7a";
+const WEATHERSTACK_API_KEY = "92f198eb4b10f922157df578957e290a";
 
 const packingItems = [
   {
@@ -39,6 +41,9 @@ export default function PackingPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [loading, setLoading] = useState(true);
+  const [weatherForecast, setWeatherForecast] = useState<any[]>([]);
+  const [lat, setLat] = useState(null);
+  const [lon, setLon] = useState(null);
   const scrollViewRef = useRef(null);
 
   useEffect(() => {
@@ -48,7 +53,10 @@ export default function PackingPage() {
         const storedStartDate = await AsyncStorage.getItem("start_date");
         const storedEndDate = await AsyncStorage.getItem("end_date");
 
-        if (storedDestination) setDestination(storedDestination);
+        if (storedDestination) {
+          setDestination(storedDestination);
+          fetchCoordinates(storedDestination); // ✅ Fetch coordinates after setting destination
+        }
         if (storedStartDate)
           setStartDate(new Date(storedStartDate).toDateString());
         if (storedEndDate) setEndDate(new Date(storedEndDate).toDateString());
@@ -60,6 +68,89 @@ export default function PackingPage() {
     };
     fetchData();
   }, []);
+
+  const fetchCoordinates = async (city) => {
+    try {
+      const geoResponse = await fetch(
+        `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`
+      );
+      const geoData = await geoResponse.json();
+
+      if (!geoData || geoData.length === 0) {
+        console.error("❌ Geocoding API returned no results.");
+        return;
+      }
+
+      const truncatedLat = parseFloat(geoData[0].lat.toFixed(2));
+      const truncatedLon = parseFloat(geoData[0].lon.toFixed(2));
+
+      setLat(truncatedLat);
+      setLon(truncatedLon);
+      console.log(
+        "(NOBRIDGE) LOG City Coordinates:",
+        truncatedLat,
+        truncatedLon
+      );
+
+      // ✅ Call fetchWeatherForecast AFTER setting lat/lon
+      fetchWeatherForecast(truncatedLat, truncatedLon);
+    } catch (error) {
+      console.error("❌ Error fetching coordinates:", error);
+    }
+  };
+
+  const fetchWeatherForecast = async (lat, lon) => {
+    if (!lat || !lon) {
+      console.error("❌ fetchWeatherForecast NOT running: lat/lon missing!");
+      return;
+    }
+
+    console.log(
+      `(NOBRIDGE) LOG fetchWeatherForecast started with lat: ${lat}, lon: ${lon}`
+    );
+
+    try {
+      const weatherResponse = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min&timezone=auto`
+      );
+      const weatherData = await weatherResponse.json();
+
+      // 🚨 Log full response
+      console.log(
+        "(NOBRIDGE) LOG Full Weather API Response:",
+        JSON.stringify(weatherData, null, 2)
+      );
+
+      // Check if data exists
+      if (!weatherData.daily || !weatherData.daily.time) {
+        console.error(
+          "❌ Weather API returned invalid data. Response:",
+          weatherData
+        );
+        return;
+      }
+
+      // Convert API response into an array
+      const forecastArray = weatherData.daily.time.map((date, index) => ({
+        date,
+        maxTemp: weatherData.daily.temperature_2m_max[index],
+        minTemp: weatherData.daily.temperature_2m_min[index],
+      }));
+
+      // Log each day's forecast
+      forecastArray.forEach((day, index) => {
+        console.log(
+          `(NOBRIDGE) LOG Day ${index + 1}: ${day.date} - 🌡 Max: ${
+            day.maxTemp
+          }°C, Min: ${day.minTemp}°C`
+        );
+      });
+
+      setWeatherForecast(forecastArray);
+    } catch (error) {
+      console.error("❌ Error fetching weather forecast:", error);
+    }
+  };
 
   return (
     <LinearGradient colors={["#4DC8E7", "#B0E7F0"]} style={styles.gradient}>
@@ -104,7 +195,6 @@ export default function PackingPage() {
                 </View>
               ))}
             </ScrollView>
-
             <AppText type="defaultSemiBold" style={styles.packingListHeader}>
               Packing List
             </AppText>
@@ -177,4 +267,14 @@ const styles = StyleSheet.create({
   packingItem: { alignItems: "center", margin: 10, flex: 1 },
   icon: { width: 60, height: 60, resizeMode: "contain" },
   packingText: { color: "white", fontSize: 18, marginTop: 5 },
+  weatherItem: {
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    padding: 15,
+    marginVertical: 8,
+    borderRadius: 10,
+    alignItems: "center",
+    width: "100%",
+  },
+  tempText: { fontSize: 20, fontWeight: "bold", color: "white" },
+  descText: { fontSize: 16, color: "white", fontStyle: "italic" },
 });
