@@ -88,7 +88,7 @@ export const WeatherProvider = ({ children }: { children: ReactNode }) => {
         bottomChoices +
         " and any elements from " +
         accessories +
-        " if needed. Don't give reasoning and dont add any stylistic elements. Finish your thought in 15 or less tokens using a full sentence with proper grammar. Don't mention accessories unless they are needed";
+        " if needed. Don't give reasoning and dont add any stylistic elements. Only pick one top and one bottom. Finish your thought in 15 or less tokens using a full sentence with proper grammar. Don't mention accessories unless they are needed";
       const examples =
         'Something like "Dress light with a shirt and shorts" or "Bundle up with a big jacket and long pants and carry an umbrella" is great. Use 10 or less tokens, proper grammar, and finish your thought';
       const prompt = directions + tempDetails;

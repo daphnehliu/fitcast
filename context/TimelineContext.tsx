@@ -104,7 +104,7 @@ export const TimelineProvider = ({ children }: { children: ReactNode }) => {
         accessories +
         ` if needed. Try to make the suggestions match the weather for that hourly forecast. Format the response simply as new lines mapping the time to the the suggested clothing items. `;
 
-      const examples = "For example, '- 2:00: Shirt, light jacket, pants'";
+      const examples = "For example, '- 2:00: shirt, light jacket, pants'";
       const prompt = directions + examples;
 
       const response = await fetch(

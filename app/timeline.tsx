@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   View,
   Image,
@@ -50,8 +50,8 @@ function Timeline() {
         const match = line.match(/-\s*(\d{1,2}):\d{2}:\s*(.+)$/);
         if (!match) return acc;
 
-        const [, hour, clothingDesc] = match; // Extract only the hour
-        const items = clothingDesc.split(", ").map((item) => item.trim()); // Extract clothing items
+        const [, hour, clothingDesc] = match;
+        const items = clothingDesc.split(", ").map((item) => item.trim());
 
         // Find images for each category
         const top = items.find((item) => topMap[item]) || null;
@@ -63,19 +63,17 @@ function Timeline() {
       }, {} as Record<string, any>);
   }
 
+  const getOutfitForHour = (hour) => {
+    const imageMap = extractClothingImages(fitcastForecast);
+    return imageMap[hour];
+  };
+
   // hardcoded for now; integrate with user's recommendations/prefs later
   const getOutfitForWeather = (weather, temp) => {
     if (weather.includes("Rain")) return [jacket, pants, umbrella];
     if (temp < 50) return [jacket, pants];
     if (temp >= 50 && temp < 70) return [shirt, pants];
     return [shirt];
-  };
-
-  const getOutfitForHour = (hour) => {
-    const imageMap = extractClothingImages(fitcastForecast);
-    console.log("time", hour);
-    console.log("returns", imageMap[hour]);
-    return imageMap[hour];
   };
 
   const convertTo12Hour = (time) => {
