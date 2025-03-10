@@ -85,7 +85,7 @@ export default function Home({ session }: { session: Session }) {
   return (
     <LinearGradient colors={gradientColors} style={styles.gradient}>
       <View style={styles.content}>
-        <View style={styles.headerContainer}>
+        <View style={styles.header}>
           <Image source={yourFitcast} style={styles.fitcastImage} />
         </View>
 
@@ -167,6 +167,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "flex-end",
+    alignSelf: "center",
     padding: 20,
     gap: 10,
   },
