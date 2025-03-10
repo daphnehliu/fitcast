@@ -243,17 +243,6 @@ export default function Auth({ onSkip }: AuthProps) {
         )}
       </View>
 
-      {/* Skip Button */}
-      <View style={styles.verticallySpaced}>
-        <Button 
-        title="Skip" 
-        disabled={loading} 
-        onPress={onSkip}
-        buttonStyle={styles.buttonOutline}
-        containerStyle={styles.buttonContainer}
-        titleStyle={styles.buttonOutlineText} />
-      </View>
-
     </View>
   );
 }
