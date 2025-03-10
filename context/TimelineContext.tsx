@@ -13,11 +13,14 @@ interface TimelineContextType {
   dailyForecast: string[];
   location: string;
   loading: boolean;
+  fitcastForecast: string;
   fitcastDescription: string;
-  fitcastLabel: string;
 }
 const API_KEY = "f076a815a1cbbdb3f228968604fdcc7a";
 const CITY = "Palo Alto";
+const topChoices = ["shirt", "light jacket", "thick jacket"];
+const bottomChoices = ["shorts", "pants"];
+const accessories = ["umbrella"];
 
 export const TimelineContext = createContext<TimelineContextType | undefined>(
   undefined
@@ -29,7 +32,7 @@ export const TimelineProvider = ({ children }: { children: ReactNode }) => {
   const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(true);
   const [fitcastDescription, setFitcastDescription] = useState("Loading...");
-  const [fitcastLabel, setFitcastLabel] = useState("Loading...");
+  const [fitcastForecast, setFitcastForecast] = useState("Loading...");
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -73,11 +76,11 @@ export const TimelineProvider = ({ children }: { children: ReactNode }) => {
             )
             .join("\n");
         };
-        const descr = await getFitcastDescription(
+        const fitcastHourly = await getFitcastForecast(
           formatForecast(hourlyForecast)
         );
-        const label = await getFitcastLabel(descr);
-        setFitcastLabel(label);
+        setFitcastForecast(fitcastHourly);
+        const descr = await getFitcastDescription(fitcastHourly);
         setFitcastDescription(descr);
       } catch (error) {
         console.error("Error fetching weather:", error);
@@ -88,15 +91,21 @@ export const TimelineProvider = ({ children }: { children: ReactNode }) => {
     fetchWeather();
   }, []);
 
-  const getFitcastDescription = async (
+  const getFitcastForecast = async (
     hourlyForecast: string
   ): Promise<string> => {
-    console.log("make sure this", hourlyForecast);
     try {
-      const prompt = `From "${hourlyForecast}", give an explanation for what clothes to wear. Point out changes throughout
-          the day that might require an outfit switch, and directly address the specific weather/temperature that drives this suggetion.
-          Make direct reference to exact time points. be detailed about the clothing items. Speak as if you're directly instructing someone and use full and proper grammar. 
-          Reply in under 25 tokens`;
+      const directions =
+        `For each of the four forecasts in "${hourlyForecast}", select one clothing suggestion from` +
+        topChoices +
+        "one element from " +
+        bottomChoices +
+        " and any elements from " +
+        accessories +
+        ` if needed. Try to make the suggestions match the weather for that hourly forecast. Format the response simply as new lines mapping the time to the the suggested clothing items. `;
+
+      const examples = "For example, '- 2:00: Shirt, light jacket, pants'";
+      const prompt = directions + examples;
 
       const response = await fetch(
         "https://api.openai.com/v1/chat/completions",
@@ -115,7 +124,52 @@ export const TimelineProvider = ({ children }: { children: ReactNode }) => {
               },
               { role: "user", content: prompt },
             ],
-            max_tokens: 25,
+            max_tokens: 100,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      const fitcastForecast = data.choices[0].message.content.trim();
+      console.log(
+        "Successfully recieved fitcastForecast prompt response: ",
+        fitcastForecast
+      );
+      return fitcastForecast;
+    } catch (error) {
+      console.error("Error fetching OpenAI response:", error);
+      return "Unable to generate fitcast forecast.";
+    }
+  };
+
+  const getFitcastDescription = async (
+    fitcastForecast: string
+  ): Promise<string> => {
+    try {
+      const instruction = `Provide a short summary of "${fitcastForecast}" in paragraph style in under 30 words. 
+      Indicate times where the clothing suggestion changes. Point out specific weather conditions to explain the changes. 
+      Convert the 24 hour time to 12 hour times with am/pm. `;
+      const example =
+        "A good response would be like 'Wear a light jacket until 8pm, but switch to a thick jacket since it gets chilly' or 'Dress light with a shirt for now but prepare for rain at 3pm.'";
+      const prompt = instruction + example;
+      const response = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "system",
+                content: "You are a weather fashion assistant.",
+              },
+              { role: "user", content: prompt },
+            ],
+            max_tokens: 50,
           }),
         }
       );
@@ -133,47 +187,6 @@ export const TimelineProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const getFitcastLabel = async (description: string): Promise<string> => {
-    if (description != "Unable to generate fitcast advice.") {
-      try {
-        const prompt = `Summarize "${description}" in less than 12 tokens. Ensure chronology and finish your thought`;
-
-        const response = await fetch(
-          "https://api.openai.com/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${OPENAI_API_KEY}`,
-            },
-            body: JSON.stringify({
-              model: "gpt-4o",
-              messages: [
-                {
-                  role: "system",
-                  content: "You are a weather fashion assistant.",
-                },
-                { role: "user", content: prompt },
-              ],
-              max_tokens: 12,
-            }),
-          }
-        );
-
-        const data = await response.json();
-        const fitcastDescription = data.choices[0].message.content.trim();
-        console.log(
-          "Successfully recieved fitcastDescription prompt response: ",
-          fitcastDescription
-        );
-        return fitcastDescription;
-      } catch (error) {
-        console.error("Error fetching OpenAI response:", error);
-        return "Unable to generate fitcast description.";
-      }
-    }
-  };
-
   return (
     <TimelineContext.Provider
       value={{
@@ -181,8 +194,8 @@ export const TimelineProvider = ({ children }: { children: ReactNode }) => {
         dailyForecast,
         location,
         loading,
+        fitcastForecast,
         fitcastDescription,
-        fitcastLabel,
       }}
     >
       {children}

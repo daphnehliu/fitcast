@@ -19,8 +19,8 @@ function Timeline() {
     dailyForecast,
     location,
     loading,
+    fitcastForecast,
     fitcastDescription,
-    fitcastLabel,
   } = useTimeline();
 
   const jacket = require("../assets/images/jacket.png");
@@ -28,12 +28,54 @@ function Timeline() {
   const shirt = require("../assets/images/t-shirt.png");
   const umbrella = require("../assets/images/umbrella.png");
 
+  const topMap = {
+    shirt: require("../assets/images/t-shirt.png"),
+    "light jacket": require("../assets/images/light-jacket.png"),
+    "thick jacket": require("../assets/images/jacket.png"),
+  };
+  const bottomMap = {
+    shorts: require("../assets/images/shorts.png"),
+    pants: require("../assets/images/pants.png"),
+  };
+  const accessoryMap = {
+    umbrella: require("../assets/images/umbrella.png"),
+  };
+
+  function extractClothingImages(fitcastString: string): Record<string, any> {
+    return fitcastString
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith("-"))
+      .reduce((acc, line) => {
+        const match = line.match(/-\s*(\d{1,2}):\d{2}:\s*(.+)$/);
+        if (!match) return acc;
+
+        const [, hour, clothingDesc] = match; // Extract only the hour
+        const items = clothingDesc.split(", ").map((item) => item.trim()); // Extract clothing items
+
+        // Find images for each category
+        const top = items.find((item) => topMap[item]) || null;
+        const bottom = items.find((item) => bottomMap[item]) || null;
+
+        acc[hour] = [topMap[top], bottomMap[bottom]];
+
+        return acc;
+      }, {} as Record<string, any>);
+  }
+
   // hardcoded for now; integrate with user's recommendations/prefs later
   const getOutfitForWeather = (weather, temp) => {
     if (weather.includes("Rain")) return [jacket, pants, umbrella];
     if (temp < 50) return [jacket, pants];
     if (temp >= 50 && temp < 70) return [shirt, pants];
     return [shirt];
+  };
+
+  const getOutfitForHour = (hour) => {
+    const imageMap = extractClothingImages(fitcastForecast);
+    console.log("time", hour);
+    console.log("returns", imageMap[hour]);
+    return imageMap[hour];
   };
 
   const convertTo12Hour = (time) => {
@@ -113,27 +155,19 @@ function Timeline() {
                         justifyContent: "center",
                       }}
                     >
-                      {getOutfitForWeather(hour.weather, hour.temp).map(
-                        (icon, idx) => (
-                          <Image
-                            key={idx}
-                            source={icon}
-                            style={{ height: 80, width: 80, margin: 5 }}
-                          />
-                        )
-                      )}
+                      {getOutfitForHour(hour.time).map((icon, idx) => (
+                        <Image
+                          key={idx}
+                          source={icon}
+                          style={{ height: 80, width: 80, margin: 5 }}
+                        />
+                      ))}
                     </View>
                   </View>
                 ))}
               </ScrollView>
               <View style={styles.fitcastDescription}>
                 <AppText style={styles.fitcastDescriptionText} type="italic">
-                  {fitcastLabel}
-                </AppText>
-                <AppText
-                  style={{ color: "white", marginLeft: 8, marginRight: 10 }}
-                  type="caption"
-                >
                   {fitcastDescription}
                 </AppText>
               </View>
@@ -206,11 +240,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   fitcastDescription: {
-    width: (4 * width) / 5,
+    width: (5 * width) / 6,
     height: 120,
     backgroundColor: "#0353A4",
     padding: 15,
-    margin: 15,
+    margin: 20,
     borderRadius: 15,
     alignSelf: "center",
   },
