@@ -44,6 +44,7 @@ export default function Home({ session }: { session: Session }) {
 
   const placeholder = require("../assets/images/cloud.png"); // remove this eventually
   const fitcast = require("../assets/images/fitcastWhite.png");
+  const yourFitcast = require("../assets/images/your-fitcast-white.png");
 
   const topChoices = ["shirt", "light jacket", "thick jacket"];
   const topMap = {
@@ -85,10 +86,7 @@ export default function Home({ session }: { session: Session }) {
     <LinearGradient colors={gradientColors} style={styles.gradient}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <AppText type="title" style={styles.headertext}>
-            Your
-          </AppText>
-          <Image source={fitcast} style={styles.image} />
+          <Image source={yourFitcast} style={styles.fitcastImage} />
         </View>
 
         <View style={styles.weatherBox}>
@@ -143,10 +141,16 @@ const styles = StyleSheet.create({
   gradient: {
     flex: 1,
   },
+  fitcastImage: {
+    width: 300,
+    height: 50,
+    resizeMode: "contain",
+  },
   headerContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    alignSelf: "center",
     paddingHorizontal: 20,
     paddingTop: 10,
   },
@@ -163,6 +167,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "flex-end",
+    alignSelf: "center",
     padding: 20,
     gap: 10,
   },
