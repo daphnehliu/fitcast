@@ -51,7 +51,7 @@ export const TimelineProvider = ({ children }: { children: ReactNode }) => {
         // 3 day forecast
         const dailyForecastData = data.list
           .filter((item) => item.dt_txt.includes("12:00:00")) // set for 12 PM each day
-          .slice(1, 4)
+          .slice(0, 3)
           .map((day) => ({
             date: day.dt_txt.split(" ")[0],
             temp: day.main.temp,
