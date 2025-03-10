@@ -2,9 +2,8 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   TextInput,
-  Button,
-  FlatList,
   TouchableOpacity,
+  FlatList,
   Text,
   StyleSheet,
   Keyboard,
@@ -21,7 +20,6 @@ const getGradientColors = (
   isNight: boolean
 ): [string, string, ...string[]] => {
   if (!weatherDesc) return ["#4DC8E7", "#B0E7F0"];
-  ``;
   if (weatherDesc.includes("Clear")) {
     return isNight ? ["#0B1A42", "#2E4B7A"] : ["#4D92D9", "#B0E7F0"];
   } else if (weatherDesc.includes("Cloud")) {
@@ -33,8 +31,15 @@ const getGradientColors = (
   } else if (isNight) {
     return ["#0B1A42", "#2E4B7A"];
   }
-
   return ["#4DC8E7", "#B0E7F0"];
+};
+
+// Helper function to format a Date object to "YYYY-MM-DD" using local date values.
+const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 export default function PackingInput() {
@@ -108,13 +113,9 @@ export default function PackingInput() {
       );
 
       const data = await response.json();
-
-      // Log the response for debugging
       console.log("API Response:", data);
 
-      // Ensure data is an array before sorting
       if (Array.isArray(data)) {
-        // Sort results by population in descending order
         const sortedData = data.sort(
           (a, b) => (b.population || 0) - (a.population || 0)
         );
@@ -140,14 +141,29 @@ export default function PackingInput() {
       pathname: "/packing/results",
       params: {
         destination,
-        startDate: startDate.toISOString().split("T")[0],
-        endDate: endDate.toISOString().split("T")[0],
+        startDate: formatLocalDate(startDate),
+        endDate: formatLocalDate(endDate),
       },
     });
   };
 
+  // Use local date math to get the default dates at midnight.
+  const now = new Date();
+  const defaultStartDate = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1
+  );
+  const defaultEndDate = startDate
+    ? new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        startDate.getDate() + 1
+      )
+    : new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
+
   return (
-    <LinearGradient colors={gradientColors} style={styles.gradient}>
+    <LinearGradient colors={["#4DC8E7", "#B0E7F0"]} style={styles.gradient}>
       <View style={styles.container}>
         <AppText type="title" style={styles.header}>
           Plan Your Packing
@@ -163,7 +179,9 @@ export default function PackingInput() {
             onSubmitEditing={searchCities}
             returnKeyType="search"
           />
-          <Button title="Search" onPress={searchCities} />
+          <TouchableOpacity style={styles.navButton} onPress={searchCities}>
+            <AppText style={styles.navButtonText}>Search</AppText>
+          </TouchableOpacity>
         </View>
 
         {isLoading && (
@@ -184,8 +202,8 @@ export default function PackingInput() {
                   onPress={async () => {
                     try {
                       setDestination(item.name);
-                      await AsyncStorage.setItem("destination", item.name); // ✅ Correct usage of await
-                      setSearchText(""); // Clear input field
+                      await AsyncStorage.setItem("destination", item.name);
+                      setSearchText("");
                       setSearchResults([]);
                       setShowResults(false);
                       Keyboard.dismiss();
@@ -202,20 +220,28 @@ export default function PackingInput() {
             />
           </View>
         )}
+
         <AppText style={styles.label}>Start Date</AppText>
-        <Button
-          title={startDate ? startDate.toDateString() : "Pick Start Date"}
+        <TouchableOpacity
+          style={styles.navButton}
           onPress={() => setStartDatePickerVisible(true)}
-        />
+        >
+          <AppText style={styles.navButtonText}>
+            {startDate ? startDate.toDateString() : "Pick Start Date"}
+          </AppText>
+        </TouchableOpacity>
         <DateTimePickerModal
           isVisible={isStartDatePickerVisible}
           mode="date"
-          minimumDate={new Date()} // ✅ Ensures start date is today or later
-          maximumDate={new Date(Date.now() + 16 * 24 * 60 * 60 * 1000)} // ✅ Ensures start date is within 16 days from today
+          date={startDate || defaultStartDate} // defaults to tomorrow if not set
+          minimumDate={defaultStartDate}
+          maximumDate={new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000)}
           onConfirm={async (date) => {
             try {
+              // Normalize the selected date to midnight.
+              date.setHours(0, 0, 0, 0);
               setStartDate(date);
-              await AsyncStorage.setItem("start_date", date.toISOString());
+              await AsyncStorage.setItem("start_date", formatLocalDate(date));
               setStartDatePickerVisible(false);
             } catch (error) {
               console.error("Error saving start date:", error);
@@ -223,20 +249,35 @@ export default function PackingInput() {
           }}
           onCancel={() => setStartDatePickerVisible(false)}
         />
+
         <AppText style={styles.label}>End Date</AppText>
-        <Button
-          title={endDate ? endDate.toDateString() : "Pick End Date"}
+        <TouchableOpacity
+          style={styles.navButton}
           onPress={() => setEndDatePickerVisible(true)}
-        />
+        >
+          <AppText style={styles.navButtonText}>
+            {endDate ? endDate.toDateString() : "Pick End Date"}
+          </AppText>
+        </TouchableOpacity>
         <DateTimePickerModal
           isVisible={isEndDatePickerVisible}
           mode="date"
-          minimumDate={startDate || new Date()} // ✅ Ensures end date is after start date
-          maximumDate={new Date(Date.now() + 16 * 24 * 60 * 60 * 1000)} // ✅ Ensures end date is within 16 days from today
+          date={endDate || defaultEndDate}
+          minimumDate={startDate || defaultStartDate}
+          maximumDate={
+            startDate
+              ? new Date(
+                  startDate.getFullYear(),
+                  startDate.getMonth(),
+                  startDate.getDate() + 6
+                )
+              : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+          }
           onConfirm={async (date) => {
             try {
+              date.setHours(0, 0, 0, 0);
               setEndDate(date);
-              await AsyncStorage.setItem("end_date", date.toISOString());
+              await AsyncStorage.setItem("end_date", formatLocalDate(date));
               setEndDatePickerVisible(false);
             } catch (error) {
               console.error("Error saving end date:", error);
@@ -245,7 +286,9 @@ export default function PackingInput() {
           onCancel={() => setEndDatePickerVisible(false)}
         />
 
-        <Button title="Get Packing List" onPress={handleSubmit} />
+        <TouchableOpacity style={styles.navButton} onPress={handleSubmit}>
+          <AppText style={styles.navButtonText}>Get Packing List</AppText>
+        </TouchableOpacity>
       </View>
     </LinearGradient>
   );
@@ -261,45 +304,58 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   header: {
-    fontSize: 32,
-    marginBottom: 24,
-    color: "white",
+    fontSize: 24,
+    marginBottom: 20,
+    textAlign: "center",
+    color: "#fff",
   },
   label: {
-    fontSize: 18,
-    marginVertical: 8,
-    color: "white",
+    marginTop: 20,
+    marginBottom: 10,
+    color: "#fff",
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
   },
   input: {
     flex: 1,
-    height: 50,
-    backgroundColor: "white",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    fontSize: 16,
-    color: "black",
+    padding: 10,
+    backgroundColor: "#fff",
+    borderRadius: 4,
     marginRight: 10,
   },
+  loadingIndicator: {
+    marginVertical: 10,
+  },
   dropdownContainer: {
-    maxHeight: 150,
     backgroundColor: "#fff",
-    borderRadius: 8,
-    overflow: "hidden",
+    borderRadius: 4,
+    marginTop: 10,
+    maxHeight: 200,
   },
   resultItem: {
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+    borderBottomColor: "#ccc",
   },
   resultText: {
-    color: "black",
+    fontSize: 16,
   },
-  loadingIndicator: {
-    marginVertical: 10,
+  navButton: {
+    backgroundColor: "#0353A4",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    marginTop: 20,
+    alignItems: "center",
+  },
+  disabledButton: {
+    backgroundColor: "#888",
+  },
+  navButtonText: {
+    color: "#FFF",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
