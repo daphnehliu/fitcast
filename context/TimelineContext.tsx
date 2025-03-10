@@ -102,9 +102,9 @@ export const TimelineProvider = ({ children }: { children: ReactNode }) => {
         bottomChoices +
         " and any elements from " +
         accessories +
-        ` if needed. Try to make the suggestions match the weather for that hourly forecast. Format the response simply as new lines mapping the time to the the suggested clothing items. `;
+        ` if needed. Try to make the suggestions match the weather for that hourly forecast. Format the response simply as new lines mapping the time to the the suggested clothing items. If a jacket is suggested, no need to also list shirt.`;
 
-      const examples = "For example, '- 2:00: shirt, light jacket, pants'";
+      const examples = "For example, '- 2:00: light jacket, pants'";
       const prompt = directions + examples;
 
       const response = await fetch(
