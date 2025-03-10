@@ -1,4 +1,4 @@
-import { Text, View, StyleSheet, Image } from "react-native";
+import { Text, View, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AppText } from "@/components/AppText";
 import { useRouter } from "expo-router";
@@ -65,6 +65,12 @@ export default function Home({ session }: { session: Session }) {
   };
   const accessoryMap = {
     umbrella: require("../assets/images/umbrella.png"),
+  };
+
+
+  // Button click handler to navigate to Timeline screen
+  const handleViewTimeline = () => {
+    router.push("/timeline"); // Navigating to timeline.tsx
   };
 
   function extractClothingItems(fitcastLabel: string) {
@@ -148,6 +154,10 @@ export default function Home({ session }: { session: Session }) {
                 />
               </View>
             </View>
+              {/* Text button that says 'View Timeline >', underlined and clickable */}
+              <TouchableOpacity onPress={handleViewTimeline}>
+                <AppText style={styles.weatherTimelineButton}>View Full Timeline ></AppText>
+              </TouchableOpacity>
           </View>
 
           <View
@@ -271,5 +281,12 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 10,
+  },
+  weatherTimelineButton: {
+    textDecorationLine: 'underline', // Underline the text
+    color: 'white', // Blue color for the button text
+    marginTop: 10, // Space between the content and the button
+    fontSize: 16, // Font size
+    fontWeight: 'bold', // Optional: makes the button bold
   },
 });
