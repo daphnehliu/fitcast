@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Alert, StyleSheet, View, Text, Image, TouchableOpacity} from "react-native";
+import React, { useState, useEffect } from "react";
+import { Alert, StyleSheet, View, Text, Image, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Keyboard} from "react-native";
 import { supabase } from "../lib/supabase";
 import { Input, Button} from "@rneui/themed";
 import { AppText } from "@/components/AppText";
@@ -17,6 +17,39 @@ export default function Auth({ onSkip }: AuthProps) {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(true); // default is Sign Up
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
+  const clearFormFields = () => {
+    setEmail("");
+    setPassword("");
+    setUsername("");
+    setProfileImage(null);
+  };
+
+  const toggleAuthMode = () => {
+    clearFormFields();
+    setIsSignUp(!isSignUp);
+  };
 
   const fitcast = require("../assets/images/fitcast.png");
 
@@ -153,104 +186,140 @@ export default function Auth({ onSkip }: AuthProps) {
 
 
   return (
-    <View style={styles.container}>
-      <Image source={fitcast} style={styles.image} /> 
-      <AppText type="title" style={styles.headerText}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.keyboardAvoidingView}
+    >
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.container}>
+          <Image 
+            source={fitcast} 
+            style={[
+              styles.image,
+              keyboardVisible && styles.imageKeyboardVisible
+            ]} 
+          /> 
+          <AppText 
+            type="title" 
+            style={[
+              styles.headerText,
+              keyboardVisible && styles.headerTextKeyboardVisible
+            ]}
+          >
             Know the weather. {"\n"}
             Know your fits. 
-        </AppText>
-      {/* Title */}
-      
-
-      {/* Toggle between Sign Up and Sign In */}
-      <View style={styles.verticallySpaced}>
-        <AppText style={styles.switchText}>
-          {isSignUp ? "Already have an account? " : "New to fitcast? "}
-          <AppText style={styles.switchTextUnderline} onPress={() => setIsSignUp(!isSignUp)}>
-            {isSignUp ? "Log in" : "Sign up"}
           </AppText>
-        </AppText>
-      </View>
+
+          {/* Toggle between Sign Up and Sign In */}
+          <View style={styles.verticallySpaced}>
+            <AppText style={styles.switchText}>
+              {isSignUp ? "Already have an account? " : "New to fitcast? "}
+              <AppText style={styles.switchTextUnderline} onPress={toggleAuthMode}>
+                {isSignUp ? "Log in" : "Sign up"}
+              </AppText>
+            </AppText>
+          </View>
 
 
-      {/* Sign Up Fields */}
-      {isSignUp && (
-        <View style={[styles.verticallySpaced, styles.inputContainer]}>
-          <Input
-            onChangeText={(text) => setUsername(text)}
-            value={username}
-            placeholder="Username*"
-            autoCapitalize="none"
-            inputContainerStyle={styles.input} 
-            placeholderTextColor="#AEB0B5"
-          />
+          {/* Sign Up Fields */}
+          {isSignUp && (
+            <View style={[styles.verticallySpaced, styles.inputContainer]}>
+              <Input
+                onChangeText={(text) => setUsername(text)}
+                value={username}
+                placeholder="Username*"
+                autoCapitalize="none"
+                inputContainerStyle={styles.input} 
+                placeholderTextColor="#AEB0B5"
+              />
+            </View>
+          )}
+
+          {/* Common Fields */}
+          <View style={[styles.verticallySpaced, styles.inputContainer]}>
+            <Input
+              onChangeText={(text) => setEmail(text)}
+              value={email}
+              placeholder="Email address*"
+              autoCapitalize="none"
+              inputContainerStyle={styles.input} 
+              placeholderTextColor="#AEB0B5"
+            />
+          </View>
+
+          <View style={[styles.verticallySpaced, styles.inputContainer]}>
+            <Input
+              onChangeText={(text) => setPassword(text)}
+              value={password}
+              secureTextEntry={true}
+              placeholder="Password*"
+              autoCapitalize="none"
+              inputContainerStyle={styles.input} 
+              placeholderTextColor="#AEB0B5"
+            />
+          </View>
+
+          {/* Profile Picture */}
+          {isSignUp && (
+          <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
+            <Image
+              source={profileImage ? { uri: profileImage } : require("../assets/images/default-avatar.png")}
+              style={styles.profileImage}
+            />
+            <AppText style={styles.imagePickerText}>Choose Profile Picture</AppText>
+          </TouchableOpacity>
+          )}
+
+          {/* Sign Up / Sign In Button */}
+          <View style={styles.verticallySpaced}>
+            {isSignUp ? (
+              <Button 
+                title="Create account" 
+                disabled={loading} 
+                onPress={signUpWithEmail} 
+                buttonStyle={styles.button}
+                containerStyle={styles.buttonContainer}
+                titleStyle={styles.buttonText}/>
+            ) : (
+              <Button 
+                title="Sign In" 
+                disabled={loading} 
+                onPress={signInWithEmail}
+                buttonStyle={styles.button}
+                containerStyle={styles.buttonContainer}
+                titleStyle={styles.buttonText} />
+            )}
+          </View>
+
         </View>
-      )}
-
-      {/* Common Fields */}
-      <View style={[styles.verticallySpaced, styles.inputContainer]}>
-        <Input
-          onChangeText={(text) => setEmail(text)}
-          value={email}
-          placeholder="Email address*"
-          autoCapitalize="none"
-          inputContainerStyle={styles.input} 
-          placeholderTextColor="#AEB0B5"
-        />
-      </View>
-
-      <View style={[styles.verticallySpaced, styles.inputContainer]}>
-        <Input
-          onChangeText={(text) => setPassword(text)}
-          value={password}
-          secureTextEntry={true}
-          placeholder="Password*"
-          autoCapitalize="none"
-          inputContainerStyle={styles.input} 
-          placeholderTextColor="#AEB0B5"
-        />
-      </View>
-
-      {/* Profile Picture */}
-      {isSignUp && (
-      <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
-        <Image
-          source={profileImage ? { uri: profileImage } : require("../assets/images/default-avatar.png")}
-          style={styles.profileImage}
-        />
-        <AppText style={styles.imagePickerText}>Choose Profile Picture</AppText>
-      </TouchableOpacity>
-      )}
-
-      {/* Sign Up / Sign In Button */}
-      <View style={styles.verticallySpaced}>
-        {isSignUp ? (
-          <Button 
-            title="Create account" 
-            disabled={loading} 
-            onPress={signUpWithEmail} 
-            buttonStyle={styles.button}
-            containerStyle={styles.buttonContainer}
-            titleStyle={styles.buttonText}/>
-        ) : (
-          <Button 
-            title="Sign In" 
-            disabled={loading} 
-            onPress={signInWithEmail}
-            buttonStyle={styles.button}
-            containerStyle={styles.buttonContainer}
-            titleStyle={styles.buttonText} />
-        )}
-      </View>
-
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40, // Add padding at the bottom for better scrolling
+  },
   container: {
     marginTop: 35,
     padding: 12,
+  },
+  inputContainer: {
+    width: '100%',
+    alignItems: 'center',
   },
   switchText: {
     color: "#0353A4",
@@ -277,12 +346,23 @@ const styles = StyleSheet.create({
     marginLeft: "25%",
     marginBottom: 5,
   },
+  imageKeyboardVisible: {
+    width: 150,
+    height: 67,
+    marginTop: 5,
+    marginBottom: 2,
+  },
   headerText: {
     marginTop: 40,
     marginBottom: 40,
     color: "black",
     textAlign: "center",
     fontSize: 35,
+  },
+  headerTextKeyboardVisible: {
+    marginTop: 10,
+    marginBottom: 20,
+    fontSize: 28,
   },
   input: {
     width: "90%", // Takes full width
