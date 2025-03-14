@@ -8,16 +8,22 @@ import { TimelineProvider } from "../context/TimelineContext";
 function LayoutWithNavBar() {
   const { session, profile, loadingProfile } = useSession();
 
-  return (
-    <View style={{ flex: 1 }}>
-      <WeatherProvider>
-        <TimelineProvider>
-          <Stack screenOptions={{ headerShown: false }} />
-          {session && !loadingProfile && profile?.onboarding_completed && (
-            <NavBar />
-          )}
+  if (session) {
+    return (
+      <WeatherProvider session={session}>
+        <TimelineProvider session={session}>
+          <View style={{ flex: 1 }}>
+            <Stack screenOptions={{ headerShown: false }} />
+            {!loadingProfile && profile?.onboarding_completed && <NavBar />}
+          </View>
         </TimelineProvider>
       </WeatherProvider>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false }} />
     </View>
   );
 }
