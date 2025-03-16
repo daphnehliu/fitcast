@@ -6,13 +6,13 @@ import React, { useState, useEffect } from "react";
 import { Session } from "@supabase/supabase-js";
 import { useWeather } from "@/context/WeatherContext";
 import { useTimeline } from "@/context/TimelineContext";
+import { supabase } from "../lib/supabase";
 
 const getGradientColors = (
   weatherDesc: string,
   isNight: boolean
 ): [string, string, ...string[]] => {
-  if (!weatherDesc) return ["#4DC8E7", "#B0E7F0"];
-  ``;
+  if (!weatherDesc || weatherDesc === "") return ["#4DC8E7", "#B0E7F0"];
   if (weatherDesc.includes("Clear")) {
     return isNight ? ["#0B1A42", "#2E4B7A"] : ["#4D92D9", "#B0E7F0"];
   } else if (weatherDesc.includes("Cloud")) {
@@ -39,9 +39,22 @@ export default function Home({ session }: { session: Session }) {
   const [now, setNow] = useState<Record<string, any>>({});
   const [later, setLater] = useState<Record<string, any>>({});
   const [laterTime, setLaterTime] = useState<number>();
-
+  const [location, setLocation] = useState<string>("Palo Alto");
   const userId = session.user?.id;
   const username = session?.user?.user_metadata?.display_name || "No Name";
+
+  useEffect(() => {
+    const fetchLocation = async () => {
+      // get user id
+      const userId = session.user?.id;
+      // get location from profiles table
+      const { data: locationData } = await supabase.from("profiles").select("location").eq("id", userId).single();
+      setLocation(locationData?.location || "Palo Alto");
+      console.log("Location:", locationData?.location);
+    };
+
+    fetchLocation();
+  }, [session]);
 
   useEffect(() => {
     setGradientColors(getGradientColors(weatherDesc, isNight));
@@ -57,7 +70,7 @@ export default function Home({ session }: { session: Session }) {
   const topMap = {
     shirt: require("../assets/images/t-shirt.png"),
     "light jacket": require("../assets/images/light-jacket.png"),
-    "heavy jacket": require("../assets/images/jacket.png"),
+    "thick jacket": require("../assets/images/jacket.png"),
   };
   const bottomMap = {
     shorts: require("../assets/images/shorts.png"),
@@ -74,12 +87,24 @@ export default function Home({ session }: { session: Session }) {
   };
 
   function extractClothingItems(fitcastLabel: string) {
+    console.log("fitcastLabel:", fitcastLabel);
+    if (fitcastLabel === "Unable to generate fitcast advice." || fitcastLabel === undefined) {
+      return {
+        top: null,
+        bottom: null,
+        accessory: null,
+      };
+    }
     const selectedTop =
       topChoices.find((item) => fitcastLabel.includes(item)) || null;
     const selectedBottom =
       bottomChoices.find((item) => fitcastLabel.includes(item)) || null;
     const selectedAccessory =
       accessories.find((item) => fitcastLabel.includes(item)) || null;
+    
+    console.log("Selected Top:", selectedTop);
+    console.log("Selected Bottom:", selectedBottom);
+    console.log("Selected Accessory:", selectedAccessory);
 
     return {
       top: selectedTop,
@@ -96,7 +121,12 @@ export default function Home({ session }: { session: Session }) {
   };
 
   useEffect(() => {
-    if (fitcastForecast === "Loading...") return;
+    console.log("fitcastLabel:", fitcastLabel);
+    console.log("fitcastForecast:", fitcastForecast);
+    if (fitcastForecast === "Loading..." ||
+      fitcastLabel === "Unable to generate fitcast advice." || 
+      fitcastLabel === undefined) 
+      return;
 
     const now = extractClothingItems(fitcastLabel);
     setNow(now);
@@ -110,7 +140,7 @@ export default function Home({ session }: { session: Session }) {
         fitcastForecast.split(":")[1]
     );
     setLaterTime(time);
-  }, [fitcastForecast]);
+  }, [fitcastForecast, fitcastLabel]);
 
   if (!weather) return <Text>Loading...</Text>;
 
@@ -126,7 +156,7 @@ export default function Home({ session }: { session: Session }) {
         </View>
 
         <View style={styles.weatherBox}>
-          <AppText style={styles.locationText}>Palo Alto, CA</AppText>
+          <AppText style={styles.locationText}>{location}</AppText>
           <AppText style={styles.tempText}>{currentTemp}º</AppText>
           <AppText style={{ color: "white" }}>{weatherDesc}</AppText>
           <AppText style={{ color: "white" }}>

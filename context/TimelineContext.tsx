@@ -5,6 +5,8 @@ import React, {
   ReactNode,
   useContext,
 } from "react";
+import { supabase } from "../lib/supabase";
+import { Session } from "@supabase/supabase-js";
 
 const OPENAI_API_KEY =
   "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";
@@ -18,15 +20,23 @@ interface TimelineContextType {
 }
 const API_KEY = "f076a815a1cbbdb3f228968604fdcc7a";
 const CITY = "Palo Alto";
-const topChoices = ["shirt", "light jacket", "thick jacket"];
-const bottomChoices = ["shorts", "pants"];
 const accessories = ["umbrella"];
+
+const itemTopChoices = {
+  "T‑Shirt": "shirt",
+  "Light Jacket": "light jacket",
+  "Heavy Jacket": "thick jacket"
+}
+const itemBottomChoices = {
+  "Shorts": "shorts",
+  "Pants": "pants"
+}
 
 export const TimelineContext = createContext<TimelineContextType | undefined>(
   undefined
 );
 
-export const TimelineProvider = ({ children }: { children: ReactNode }) => {
+export const TimelineProvider = ({ children, session }: { children: ReactNode; session: Session }) => {
   const [weatherData, setWeatherData] = useState([]);
   const [dailyForecast, setDailyForecast] = useState([]);
   const [location, setLocation] = useState("");
@@ -37,9 +47,22 @@ export const TimelineProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
+         // fetch preferences and location
+         const [{ data: profileData, error: profileError }, { data: preferencesData, error: preferencesError }] = await Promise.all([
+          supabase.from("profiles").select("username, avatar_url, location").eq("id", session.user.id).single(),
+          supabase.from("initial_preferences").select("cold_tolerance, prefers_layers, items").eq("user_id", session.user.id).limit(1),
+        ]);
+
+        // get items from preferences data
+        const items = preferencesData?.[0]?.items || [];
+        console.log("timeline Items:", items);
+
+        // get location from profile data, if not found, use Palo Alto
+        const location = profileData?.location || CITY;
+
         const response = await fetch(
           // api call is different from home; uses forecast not weather for 3 day forecast
-          `http://api.openweathermap.org/data/2.5/forecast?q=${CITY}&appid=${API_KEY}&units=imperial`
+          `http://api.openweathermap.org/data/2.5/forecast?q=${location}&appid=${API_KEY}&units=imperial`
         );
         const data = await response.json();
         setLocation(`${data.city.name}, ${data.city.country}`);
@@ -76,8 +99,29 @@ export const TimelineProvider = ({ children }: { children: ReactNode }) => {
             )
             .join("\n");
         };
+
+        // alter topChoices and bottomChoices based on preferences of items
+        let userTopChoices = items
+          .filter((item: string) => item in itemTopChoices)
+          .map((item: string) => itemTopChoices[item as keyof typeof itemTopChoices]);
+        
+        let userBottomChoices = items
+          .filter((item: string) => item in itemBottomChoices)
+          .map((item: string) => itemBottomChoices[item as keyof typeof itemBottomChoices]);
+        
+        console.log("timeline userTopChoices:", userTopChoices);
+        console.log("timeline userBottomChoices:", userBottomChoices);
+        // If no valid choices found, use defaults
+        if (userTopChoices.length === 0) userTopChoices = ["shirt"];
+        if (userBottomChoices.length === 0) userBottomChoices = ["pants"];
+
+        console.log("timeline userTopChoices after filtering:", userTopChoices);
+        console.log("timeline userBottomChoices after filtering:", userBottomChoices);
+  
         const fitcastHourly = await getFitcastForecast(
-          formatForecast(hourlyForecast)
+          formatForecast(hourlyForecast),
+          userTopChoices,
+          userBottomChoices
         );
         setFitcastForecast(fitcastHourly);
         const descr = await getFitcastDescription(fitcastHourly);
@@ -89,10 +133,12 @@ export const TimelineProvider = ({ children }: { children: ReactNode }) => {
     };
 
     fetchWeather();
-  }, []);
+  }, [session]);
 
   const getFitcastForecast = async (
-    hourlyForecast: string
+    hourlyForecast: string,
+    topChoices: string[],
+    bottomChoices: string[]
   ): Promise<string> => {
     try {
       const directions =
@@ -102,9 +148,9 @@ export const TimelineProvider = ({ children }: { children: ReactNode }) => {
         bottomChoices +
         " and any elements from " +
         accessories +
-        ` if needed. Try to make the suggestions match the weather for that hourly forecast. Format the response simply as new lines mapping the time to the the suggested clothing items. If a jacket is suggested, no need to also list shirt.`;
+        ` if needed. Only suggest clothing items that are listed above. You must select one top and one bottom. Try to make the suggestions match the weather for that hourly forecast. Format the response simply as new lines mapping the time to the the suggested clothing items. If a jacket is suggested, no need to also list shirt.`;
 
-      const examples = "For example, '- 2:00: light jacket, pants'";
+      const examples = "For example, '- 2:00: light jacket, shorts'";
       const prompt = directions + examples;
 
       const response = await fetch(
@@ -131,6 +177,7 @@ export const TimelineProvider = ({ children }: { children: ReactNode }) => {
 
       const data = await response.json();
       const fitcastForecast = data.choices[0].message.content.trim();
+      console.log("timeline fitcastForecast:", fitcastForecast);
       console.log(
         "Successfully recieved fitcastForecast prompt response: ",
         fitcastForecast

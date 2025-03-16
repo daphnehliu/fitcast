@@ -28,6 +28,10 @@ function Timeline() {
   const shirt = require("../assets/images/t-shirt.png");
   const umbrella = require("../assets/images/umbrella.png");
 
+  const topChoices = ["shirt", "light jacket", "thick jacket"];
+  const bottomChoices = ["shorts", "pants"];
+  const accessories = ["umbrella"];
+
   const topMap = {
     shirt: require("../assets/images/t-shirt.png"),
     "light jacket": require("../assets/images/light-jacket.png"),
@@ -41,31 +45,40 @@ function Timeline() {
     umbrella: require("../assets/images/umbrella.png"),
   };
 
-  function extractClothingImages(fitcastString: string): Record<string, any> {
-    return fitcastString
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.startsWith("-"))
-      .reduce((acc, line) => {
-        const match = line.match(/-\s*(\d{1,2}):\d{2}:\s*(.+)$/);
-        if (!match) return acc;
-
-        const [, hour, clothingDesc] = match;
-        const items = clothingDesc.split(", ").map((item) => item.trim());
-
-        // Find images for each category
-        const top = items.find((item) => topMap[item]) || null;
-        const bottom = items.find((item) => bottomMap[item]) || null;
-
-        acc[hour] = [topMap[top], bottomMap[bottom]];
-
-        return acc;
-      }, {} as Record<string, any>);
+  function extractClothingItems(fitcastString: string) {
+    console.log("fitcastString:", fitcastString);
+    const selectedTop =
+      topChoices.find((item) => fitcastString.includes(item)) || null;
+    const selectedBottom =
+      bottomChoices.find((item) => fitcastString.includes(item)) || null;
+    const selectedAccessory =
+      accessories.find((item) => fitcastString.includes(item)) || null;
+    
+    return {
+      top: selectedTop ? topMap[selectedTop] : null,
+      bottom: selectedBottom ? bottomMap[selectedBottom] : null,
+      accessory: selectedAccessory ? accessoryMap[selectedAccessory] : null,
+    };
   }
 
-  const getOutfitForHour = (hour) => {
-    const imageMap = extractClothingImages(fitcastForecast);
-    return imageMap[hour];
+  const getOutfitForHour = (hour: number) => {
+    if (!fitcastForecast || fitcastForecast === "Loading...") return [];
+
+    console.log("fitcastForecast for hour:", fitcastForecast);
+    
+    const hourlyOutfits = fitcastForecast.split("\n")
+      .map(line => line.trim())
+      .filter(line => line.startsWith("-"));
+
+    const matchingOutfit = hourlyOutfits.find(outfit => {
+      const timeMatch = outfit.match(/^-\s*(\d+):00/);
+      return timeMatch && parseInt(timeMatch[1]) === hour;
+    });
+
+    if (!matchingOutfit) return [];
+
+    const items = extractClothingItems(matchingOutfit);
+    return [items.top, items.bottom, items.accessory].filter(item => item !== null);
   };
 
   // hardcoded for now; integrate with user's recommendations/prefs later
@@ -153,7 +166,7 @@ function Timeline() {
                         justifyContent: "center",
                       }}
                     >
-                      {getOutfitForHour(hour.time).map((icon, idx) => (
+                      {getOutfitForHour(parseInt(hour.time)).map((icon, idx) => (
                         <Image
                           key={idx}
                           source={icon}

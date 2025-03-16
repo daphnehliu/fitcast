@@ -5,6 +5,8 @@ import React, {
   ReactNode,
   useContext,
 } from "react";
+import { supabase } from "../lib/supabase";
+import { Session } from "@supabase/supabase-js";
 
 const OPENAI_API_KEY =
   "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";
@@ -15,30 +17,55 @@ interface WeatherContextType {
   gradientColors: string[];
   fitcastDescription: string;
   fitcastLabel: string;
+  userTopChoices: string[];
+  userBottomChoices: string[];
 }
 
 export const WeatherContext = createContext<WeatherContextType | undefined>(
   undefined
 );
 
-const topChoices = ["shirt", "light jacket", "thick jacket"];
-const bottomChoices = ["shorts", "pants"];
 const accessories = ["umbrella"];
 
-export const WeatherProvider = ({ children }: { children: ReactNode }) => {
+// item to topChoices and bottomChoices mapping
+// map supabase items to topChoices and bottomChoices
+const itemTopChoices = {
+  "T‑Shirt": "shirt",
+  "Light Jacket": "light jacket",
+  "Heavy Jacket": "thick jacket"
+}
+const itemBottomChoices = {
+  "Shorts": "shorts",
+  "Pants": "pants"
+}
+
+export const WeatherProvider = ({ children, session }: { children: ReactNode; session: Session }) => {
   const [weather, setWeather] = useState<any>(null);
   const [isNight, setIsNight] = useState(false);
   const [weatherDesc, setWeatherDesc] = useState("");
   const [fitcastDescription, setFitcastDescription] = useState("Loading...");
   const [fitcastLabel, setFitcastLabel] = useState("Loading...");
+  const [loading, setLoading] = useState(true);
+  const [userTopChoices, setUserTopChoices] = useState<string[]>([]);
+  const [userBottomChoices, setUserBottomChoices] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchWeather = async () => {
       try {
+        // fetch preferences and location
+        const [{ data: profileData, error: profileError }, { data: preferencesData, error: preferencesError }] = await Promise.all([
+          supabase.from("profiles").select("username, avatar_url, location").eq("id", session.user.id).single(),
+          supabase.from("initial_preferences").select("cold_tolerance, prefers_layers, items").eq("user_id", session.user.id).limit(1),
+        ]);
+
+        // get items from preferences data
+        const items = preferencesData?.[0]?.items || [];
+
+        // get location from profile data, if not found, use Palo Alto
+        const location = profileData?.location || "Palo Alto";
+
         const apiKey = "f076a815a1cbbdb3f228968604fdcc7a";
-        const response = await fetch(
-          `http://api.openweathermap.org/data/2.5/weather?q=Palo%20Alto&appid=${apiKey}&units=imperial`
-        );
+        const response = await fetch(`http://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${apiKey}&units=imperial`)
         const data = await response.json();
         setWeather(data);
 
@@ -47,15 +74,31 @@ export const WeatherProvider = ({ children }: { children: ReactNode }) => {
         const formattedDesc = data.weather[0].description
           .toLowerCase()
           .split(" ")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(" ");
         setWeatherDesc(formattedDesc);
 
+        // alter topChoices and bottomChoices based on preferences of items
+        let userTopChoices = items
+          .filter((item: string) => item in itemTopChoices)
+          .map((item: string) => itemTopChoices[item as keyof typeof itemTopChoices]);
+        
+        let userBottomChoices = items
+          .filter((item: string) => item in itemBottomChoices)
+          .map((item: string) => itemBottomChoices[item as keyof typeof itemBottomChoices]);
+
+        // If no valid choices found, use defaults
+        if (userTopChoices.length === 0) userTopChoices = ["shirt"];
+        if (userBottomChoices.length === 0) userBottomChoices = ["pants"];
+
+        // ALTER ANY OTHER PREFERENCES HERE BEFORE YOU CALL getFitcastLabel and getFitcastDescription
         const label = await getFitcastLabel(
           formattedDesc,
           data.main.temp,
           data.main.temp_max,
-          data.main.temp_min
+          data.main.temp_min,
+          userTopChoices,
+          userBottomChoices
         );
         const descr = await getFitcastDescription(
           formattedDesc,
@@ -71,13 +114,15 @@ export const WeatherProvider = ({ children }: { children: ReactNode }) => {
       }
     };
     fetchWeather();
-  }, []);
+  }, [session]);
 
   const getFitcastLabel = async (
     description: string,
     temp: number,
     high: number,
-    low: number
+    low: number,
+    topChoices: string[],
+    bottomChoices: string[]
   ): Promise<string> => {
     try {
       const tempDetails = `The current weather is described as "${description}". The temperature is ${temp}ºF, with a high of ${high}ºF and a low of ${low}ºF. `;
@@ -186,6 +231,8 @@ export const WeatherProvider = ({ children }: { children: ReactNode }) => {
         weatherDesc,
         fitcastDescription,
         fitcastLabel,
+        userTopChoices,
+        userBottomChoices,
       }}
     >
       {children}

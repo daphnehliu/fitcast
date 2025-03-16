@@ -40,29 +40,50 @@ export default function Account({ session }: { session: Session }) {
   const [items, setItems] = useState([
     { label: "I feel cold easily", value: -1 },
     { label: "Neutral", value: 0 },
-    { label: "I don’t feel cold easily", value: 1 },
+    { label: "I don't feel cold easily", value: 1 },
   ]);
 
   const [clothingItems, setClothingItems] = useState<string[]>([]);
   const [clothingOpen, setClothingOpen] = useState(false);
   const [clothingOptions, setClothingOptions] = useState([
-    { label: "Heavy Jacket", value: "Heavy Jacket" },
-    { label: "T‑Shirt", value: "T‑Shirt" },
-    { label: "Shorts", value: "Shorts" },
-    { label: "Pants", value: "Pants" },
-    { label: "Light Jacket", value: "Light Jacket" },
+    { label: "Heavy Jacket", value: "Heavy Jacket", type: "top" },
+    { label: "Shirt", value: "T‑Shirt", type: "top" },
+    { label: "Pants", value: "Pants", type: "bottom" },
+    { label: "Shorts", value: "Shorts", type: "bottom" },
+    { label: "Light Jacket", value: "Light Jacket", type: "top" },
   ]);
+
+  // Helper function to validate clothing selection
+  const validateClothingSelection = (items: string[]) => {
+    // Check for pants
+    const hasPants = items.includes("Pants");
+    
+    // Check for T-Shirt
+    const hasShirt = items.includes("T‑Shirt");
+    
+    // Check for at least one jacket
+    const hasJacket = items.some(item => 
+      item === "Heavy Jacket" || item === "Light Jacket"
+    );
+
+    return hasPants && hasShirt && hasJacket;
+  };
 
   // logout function
   async function handleLogout() {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      Alert.alert("Logout error", error.message);
-    }
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        Alert.alert("Logout error", error.message);
+        return;
+      }
 
-    // go back to index
-    router.replace("/");
-    router.dismissAll(); // Ensure all previous screens are removed
+      // Navigate to index after successful logout
+      router.replace("/");
+    } catch (error) {
+      console.error("Error during logout:", error);
+      Alert.alert("Logout error", "An unexpected error occurred during logout.");
+    }
   }
 
   useEffect(() => {
@@ -120,6 +141,15 @@ export default function Account({ session }: { session: Session }) {
   async function updateAccount() {
     try {
       if (!session?.user) throw new Error("No user on the session!");
+  
+      // Validate clothing selection
+      if (!validateClothingSelection(clothingItems)) {
+        Alert.alert(
+          "Invalid Selection",
+          "Please select pants, a T-shirt, and at least one jacket (heavy or light)."
+        );
+        return;
+      }
   
       setLoading(true);
   
@@ -297,7 +327,7 @@ export default function Account({ session }: { session: Session }) {
                 items={[
                   { label: "I feel cold easily", value: -1 },
                   { label: "Neutral", value: 0 },
-                  { label: "I don’t feel cold easily", value: 1 },
+                  { label: "I don't feel cold easily", value: 1 },
                 ]}
                 setOpen={setOpen}
                 setValue={setColdTolerance}
@@ -322,18 +352,20 @@ export default function Account({ session }: { session: Session }) {
 
             <View style={[styles.inputContainer, { zIndex: open || layersOpen ? 1 : 2 }]}>
               <AppText style={styles.label}>Clothing Items</AppText>
+              <AppText style={styles.sublabel}>Must select pants, shirt, and at least one jacket</AppText>
               <DropDownPicker
                 open={clothingOpen}
-                value={clothingItems} // Multi-select items
+                value={clothingItems}
                 items={clothingOptions}
                 setOpen={setClothingOpen}
                 setValue={setClothingItems}
-                multiple={true} // Enable multiple selections
-                min={0} // Allows no selection
-                mode="BADGE" // Shows selected items as badges
-                badgeDotColors={["#0353A4"]} // Removes the dot
+                multiple={true}
+                min={2} // Minimum two items (one top, one bottom)
+                mode="BADGE"
+                badgeDotColors={["#0353A4"]}
                 containerStyle={{ zIndex: open || layersOpen ? 1 : 2 }}
                 style={styles.dropdown}
+                listItemLabelStyle={styles.dropdownItemLabel}
               />
             </View>
 
@@ -504,5 +536,14 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   
-  
+  sublabel: {
+    fontSize: 14,
+    color: "#666",
+    alignSelf: "flex-start",
+    paddingLeft: 10,
+    marginBottom: 5,
+  },
+  dropdownItemLabel: {
+    color: "#333",
+  },
 });
