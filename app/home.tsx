@@ -28,6 +28,7 @@ const getGradientColors = (
   return ["#4DC8E7", "#B0E7F0"];
 };
 
+
 export default function Home({ session }: { session: Session }) {
   const router = useRouter();
   const { weather, isNight, weatherDesc, fitcastDescription, fitcastLabel } =
@@ -79,7 +80,6 @@ export default function Home({ session }: { session: Session }) {
   const accessoryMap = {
     umbrella: require("../assets/images/umbrella.png"),
   };
-
 
   // Button click handler to navigate to Timeline screen
   const handleViewTimeline = () => {
@@ -167,21 +167,36 @@ export default function Home({ session }: { session: Session }) {
         <View style={styles.fitcastSection}>
           <View style={styles.fitcastBoxLight}>
             <View style={styles.fitcastLabel}>
-              <View>
+              <View style = {{width: "50%"}}>
                 <AppText style={styles.weatherDetailsText}>Now:</AppText>
-                <Image source={topMap[now["top"]]} style={styles.image} />
-                <Image source={bottomMap[now["bottom"]]} style={styles.image} />
+                <View style={{ flexDirection: "row"}}> 
+                  <View style={{ alignItems: "center", flex:1}}>
+                    <Image source={topMap[now["top"]]} style={styles.image} />
+                    <Image
+                      source={bottomMap[now["bottom"]]}
+                      style={styles.image}
+                    />
+                  </View>
+                  <View style={{flex:1, alignItems: "center", justifyContent: "center"}}>
+                  { now["accessory"] && (<Image source={accessoryMap[now["accessory"]]} style={[styles.image]} />)}
+                  </View> 
+                </View>
               </View>
 
-              <View>
-                <AppText style={styles.weatherDetailsText}>
-                  Later: {laterTime}
-                </AppText>
-                <Image source={topMap[later["top"]]} style={styles.image} />
-                <Image
-                  source={bottomMap[later["bottom"]]}
-                  style={styles.image}
-                />
+              <View style = {{width: "50%"}}>
+                <AppText style={styles.weatherDetailsText}>Later: {laterTime}</AppText>
+                <View style={{ flexDirection: "row"}}> 
+                  <View style={{ alignItems: "center", flex:1}}>
+                    <Image source={topMap[later["top"]]} style={styles.image} />
+                    <Image
+                      source={bottomMap[later["bottom"]]}
+                      style={styles.image}
+                    />
+                  </View>
+                  <View style={{flex:1, alignItems: "center", justifyContent: "center"}}>
+                  { later["accessory"] && (<Image source={accessoryMap[later["accessory"]]} style={[styles.image]} />)}
+                  </View> 
+                </View>
               </View>
             </View>
               {/* Text button that says 'View Timeline >', underlined and clickable */}
