@@ -53,7 +53,7 @@ function Timeline() {
       bottomChoices.find((item) => fitcastString.includes(item)) || null;
     const selectedAccessory =
       accessories.find((item) => fitcastString.includes(item)) || null;
-    
+
     return {
       top: selectedTop ? topMap[selectedTop] : null,
       bottom: selectedBottom ? bottomMap[selectedBottom] : null,
@@ -65,12 +65,13 @@ function Timeline() {
     if (!fitcastForecast || fitcastForecast === "Loading...") return [];
 
     console.log("fitcastForecast for hour:", fitcastForecast);
-    
-    const hourlyOutfits = fitcastForecast.split("\n")
-      .map(line => line.trim())
-      .filter(line => line.startsWith("-"));
 
-    const matchingOutfit = hourlyOutfits.find(outfit => {
+    const hourlyOutfits = fitcastForecast
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith("-"));
+
+    const matchingOutfit = hourlyOutfits.find((outfit) => {
       const timeMatch = outfit.match(/^-\s*(\d+):00/);
       return timeMatch && parseInt(timeMatch[1]) === hour;
     });
@@ -78,12 +79,15 @@ function Timeline() {
     if (!matchingOutfit) return [];
 
     const items = extractClothingItems(matchingOutfit);
-    return [items.top, items.bottom, items.accessory].filter(item => item !== null);
+    return [items.top, items.bottom, items.accessory].filter(
+      (item) => item !== null
+    );
   };
 
   // hardcoded for now; integrate with user's recommendations/prefs later
   const getOutfitForWeather = (weather, temp) => {
     if (weather.includes("Rain")) return [jacket, pants, umbrella];
+    if (weather.includes("Showers")) return [jacket, pants, umbrella];
     if (temp < 50) return [jacket, pants];
     if (temp >= 50 && temp < 70) return [shirt, pants];
     return [shirt];
@@ -166,13 +170,15 @@ function Timeline() {
                         justifyContent: "center",
                       }}
                     >
-                      {getOutfitForHour(parseInt(hour.time)).map((icon, idx) => (
-                        <Image
-                          key={idx}
-                          source={icon}
-                          style={{ height: 80, width: 80, margin: 5 }}
-                        />
-                      ))}
+                      {getOutfitForHour(parseInt(hour.time)).map(
+                        (icon, idx) => (
+                          <Image
+                            key={idx}
+                            source={icon}
+                            style={{ height: 80, width: 80, margin: 5 }}
+                          />
+                        )
+                      )}
                     </View>
                   </View>
                 ))}

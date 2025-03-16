@@ -32,14 +32,20 @@ const accessories = ["umbrella"];
 const itemTopChoices = {
   "T‑Shirt": "shirt",
   "Light Jacket": "light jacket",
-  "Heavy Jacket": "thick jacket"
-}
+  "Heavy Jacket": "thick jacket",
+};
 const itemBottomChoices = {
-  "Shorts": "shorts",
-  "Pants": "pants"
-}
+  Shorts: "shorts",
+  Pants: "pants",
+};
 
-export const WeatherProvider = ({ children, session }: { children: ReactNode; session: Session }) => {
+export const WeatherProvider = ({
+  children,
+  session,
+}: {
+  children: ReactNode;
+  session: Session;
+}) => {
   const [weather, setWeather] = useState<any>(null);
   const [isNight, setIsNight] = useState(false);
   const [weatherDesc, setWeatherDesc] = useState("");
@@ -53,9 +59,20 @@ export const WeatherProvider = ({ children, session }: { children: ReactNode; se
     const fetchWeather = async () => {
       try {
         // fetch preferences and location
-        const [{ data: profileData, error: profileError }, { data: preferencesData, error: preferencesError }] = await Promise.all([
-          supabase.from("profiles").select("username, avatar_url, location").eq("id", session.user.id).single(),
-          supabase.from("initial_preferences").select("cold_tolerance, prefers_layers, items").eq("user_id", session.user.id).limit(1),
+        const [
+          { data: profileData, error: profileError },
+          { data: preferencesData, error: preferencesError },
+        ] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("username, avatar_url, location")
+            .eq("id", session.user.id)
+            .single(),
+          supabase
+            .from("initial_preferences")
+            .select("cold_tolerance, prefers_layers, items")
+            .eq("user_id", session.user.id)
+            .limit(1),
         ]);
 
         // get items from preferences data
@@ -65,7 +82,9 @@ export const WeatherProvider = ({ children, session }: { children: ReactNode; se
         const location = profileData?.location || "Palo Alto";
 
         const apiKey = "f076a815a1cbbdb3f228968604fdcc7a";
-        const response = await fetch(`http://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${apiKey}&units=imperial`)
+        const response = await fetch(
+          `http://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${apiKey}&units=imperial`
+        );
         const data = await response.json();
         setWeather(data);
 
@@ -81,11 +100,17 @@ export const WeatherProvider = ({ children, session }: { children: ReactNode; se
         // alter topChoices and bottomChoices based on preferences of items
         let userTopChoices = items
           .filter((item: string) => item in itemTopChoices)
-          .map((item: string) => itemTopChoices[item as keyof typeof itemTopChoices]);
-        
+          .map(
+            (item: string) =>
+              itemTopChoices[item as keyof typeof itemTopChoices]
+          );
+
         let userBottomChoices = items
           .filter((item: string) => item in itemBottomChoices)
-          .map((item: string) => itemBottomChoices[item as keyof typeof itemBottomChoices]);
+          .map(
+            (item: string) =>
+              itemBottomChoices[item as keyof typeof itemBottomChoices]
+          );
 
         // If no valid choices found, use defaults
         if (userTopChoices.length === 0) userTopChoices = ["shirt"];
@@ -97,6 +122,8 @@ export const WeatherProvider = ({ children, session }: { children: ReactNode; se
           data.main.temp,
           data.main.temp_max,
           data.main.temp_min,
+          data.main.feels_like,
+          data.main.humidity,
           userTopChoices,
           userBottomChoices
         );
@@ -121,11 +148,13 @@ export const WeatherProvider = ({ children, session }: { children: ReactNode; se
     temp: number,
     high: number,
     low: number,
+    feels_like: number,
+    humidity: number,
     topChoices: string[],
     bottomChoices: string[]
   ): Promise<string> => {
     try {
-      const tempDetails = `The current weather is described as "${description}". The temperature is ${temp}ºF, with a high of ${high}ºF and a low of ${low}ºF. `;
+      const tempDetails = `The current weather is described as "${description}". The temperature is ${temp}ºF, with a high of ${high}ºF and a low of ${low}ºF. It feels like ${feels_like}ºF and there is ${humidity} humidity.`;
       const directions =
         "Provide a short clothing recommendation for the weather including one element from" +
         topChoices +
