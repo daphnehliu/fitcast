@@ -46,22 +46,27 @@ export default function Account({ session }: { session: Session }) {
   const [clothingItems, setClothingItems] = useState<string[]>([]);
   const [clothingOpen, setClothingOpen] = useState(false);
   const [clothingOptions, setClothingOptions] = useState([
-    { label: "Heavy Jacket (Top)", value: "Heavy Jacket", type: "top" },
-    { label: "T‑Shirt (Top)", value: "T‑Shirt", type: "top" },
-    { label: "Shorts (Bottom)", value: "Shorts", type: "bottom" },
-    { label: "Pants (Bottom)", value: "Pants", type: "bottom" },
-    { label: "Light Jacket (Top)", value: "Light Jacket", type: "top" },
+    { label: "Heavy Jacket", value: "Heavy Jacket", type: "top" },
+    { label: "Shirt", value: "T‑Shirt", type: "top" },
+    { label: "Pants", value: "Pants", type: "bottom" },
+    { label: "Shorts", value: "Shorts", type: "bottom" },
+    { label: "Light Jacket", value: "Light Jacket", type: "top" },
   ]);
 
   // Helper function to validate clothing selection
   const validateClothingSelection = (items: string[]) => {
-    const hasTop = items.some(item => 
-      clothingOptions.find(opt => opt.value === item && opt.type === "top")
+    // Check for pants
+    const hasPants = items.includes("Pants");
+    
+    // Check for T-Shirt
+    const hasShirt = items.includes("T‑Shirt");
+    
+    // Check for at least one jacket
+    const hasJacket = items.some(item => 
+      item === "Heavy Jacket" || item === "Light Jacket"
     );
-    const hasBottom = items.some(item => 
-      clothingOptions.find(opt => opt.value === item && opt.type === "bottom")
-    );
-    return hasTop && hasBottom;
+
+    return hasPants && hasShirt && hasJacket;
   };
 
   // logout function
@@ -141,7 +146,7 @@ export default function Account({ session }: { session: Session }) {
       if (!validateClothingSelection(clothingItems)) {
         Alert.alert(
           "Invalid Selection",
-          "Please select at least one top (T-Shirt/Jacket) and one bottom (Shorts/Pants)."
+          "Please select pants, a T-shirt, and at least one jacket (heavy or light)."
         );
         return;
       }
@@ -347,7 +352,7 @@ export default function Account({ session }: { session: Session }) {
 
             <View style={[styles.inputContainer, { zIndex: open || layersOpen ? 1 : 2 }]}>
               <AppText style={styles.label}>Clothing Items</AppText>
-              <AppText style={styles.sublabel}>Select at least one top and one bottom</AppText>
+              <AppText style={styles.sublabel}>Must select pants, shirt, and at least one jacket</AppText>
               <DropDownPicker
                 open={clothingOpen}
                 value={clothingItems}
