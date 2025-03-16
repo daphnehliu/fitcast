@@ -179,9 +179,6 @@ export default function PackingInput() {
             onSubmitEditing={searchCities}
             returnKeyType="search"
           />
-          <TouchableOpacity style={styles.navButton} onPress={searchCities}>
-            <AppText style={styles.navButtonText}>Search</AppText>
-          </TouchableOpacity>
         </View>
 
         {isLoading && (
@@ -233,12 +230,11 @@ export default function PackingInput() {
         <DateTimePickerModal
           isVisible={isStartDatePickerVisible}
           mode="date"
-          date={startDate || defaultStartDate} // defaults to tomorrow if not set
+          date={startDate || defaultStartDate}
           minimumDate={defaultStartDate}
-          maximumDate={new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000)}
+          maximumDate={new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000)} // Max 6 days from today
           onConfirm={async (date) => {
             try {
-              // Normalize the selected date to midnight.
               date.setHours(0, 0, 0, 0);
               setStartDate(date);
               await AsyncStorage.setItem("start_date", formatLocalDate(date));
@@ -263,16 +259,8 @@ export default function PackingInput() {
           isVisible={isEndDatePickerVisible}
           mode="date"
           date={endDate || defaultEndDate}
-          minimumDate={startDate || defaultStartDate}
-          maximumDate={
-            startDate
-              ? new Date(
-                  startDate.getFullYear(),
-                  startDate.getMonth(),
-                  startDate.getDate() + 6
-                )
-              : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-          }
+          minimumDate={startDate || defaultStartDate} // End date can't be before start date
+          maximumDate={new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000)} // End date is always within 6 days from today
           onConfirm={async (date) => {
             try {
               date.setHours(0, 0, 0, 0);

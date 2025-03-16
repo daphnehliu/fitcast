@@ -63,7 +63,7 @@ function getClothingItemsForDay(forecast) {
     });
   }
   // Umbrella logic: if forecast description mentions rain.
-  const rainKeywords = ["Rain", "Drizzle", "Thunderstorm"];
+  const rainKeywords = ["Rain", "Drizzle", "Thunderstorm", "Showers"];
   if (rainKeywords.some((kw) => forecast.description.includes(kw))) {
     items.push({
       type: "umbrella",
