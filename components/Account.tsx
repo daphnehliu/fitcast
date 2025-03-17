@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   container: {
     marginTop: 60,
     padding: 12,
-    paddingBottom: 40,
+    paddingBottom: 100,
     minHeight: '100%',
   },
   title: {
