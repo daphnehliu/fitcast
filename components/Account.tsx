@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, SetStateAction } from "react";
 import { supabase } from "../lib/supabase";
 import { StyleSheet, View, Alert, Text, Image, TouchableOpacity, ScrollView } from "react-native";
 import { Button, Input } from "@rneui/themed";
@@ -257,19 +257,43 @@ export default function Account({ session }: { session: Session }) {
     setShowLocationModal(true); // Open modal instead of navigating
   }  
 
+  const handleColdToleranceOpen = (value: SetStateAction<boolean>) => {
+    setOpen(value);
+    if (value) {
+      setLayersOpen(false);
+      setClothingOpen(false);
+    }
+  };
+
+  const handleLayersOpen = (value: SetStateAction<boolean>) => {
+    setLayersOpen(value);
+    if (value) {
+      setOpen(false);
+      setClothingOpen(false);
+    }
+  };
+
+  const handleClothingOpen = (value: SetStateAction<boolean>) => {
+    setClothingOpen(value);
+    if (value) {
+      setOpen(false);
+      setLayersOpen(false);
+    }
+  };
+
   return (
     <View style={styles.fullScreen}>
       {showLocationModal ? (
         <CurrentLocation
           onClose={() => setShowLocationModal(false)}
           onLocationSelect={(newLocation) => {
-            setTempLocation(newLocation); // Store only the city name
+            setTempLocation(newLocation);
             setShowLocationModal(false);
           }}
         />
       ) : (
-        <ScrollView >
-          <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.container}>
+          <View>
             {/* Title */}
             <Text style={styles.title}>Hello, {username || "User"}!</Text>
 
@@ -329,9 +353,9 @@ export default function Account({ session }: { session: Session }) {
                   { label: "Neutral", value: 0 },
                   { label: "I don't feel cold easily", value: 1 },
                 ]}
-                setOpen={setOpen}
+                setOpen={handleColdToleranceOpen}
                 setValue={setColdTolerance}
-                containerStyle={{ zIndex: layersOpen ? 1 : 2 }} // Ensures stacking order
+                containerStyle={{ zIndex: layersOpen ? 1 : 2 }}
                 style={styles.dropdown}
               />
             </View>
@@ -343,9 +367,9 @@ export default function Account({ session }: { session: Session }) {
                 open={layersOpen}
                 value={prefersLayers}
                 items={layerOptions}
-                setOpen={setLayersOpen}
+                setOpen={handleLayersOpen}
                 setValue={setPrefersLayers}
-                containerStyle={{ zIndex: open ? 1 : 2 }} // Ensures stacking order
+                containerStyle={{ zIndex: open ? 1 : 2 }}
                 style={styles.dropdown}
               />
             </View>
@@ -357,10 +381,10 @@ export default function Account({ session }: { session: Session }) {
                 open={clothingOpen}
                 value={clothingItems}
                 items={clothingOptions}
-                setOpen={setClothingOpen}
+                setOpen={handleClothingOpen}
                 setValue={setClothingItems}
                 multiple={true}
-                min={2} // Minimum two items (one top, one bottom)
+                min={2}
                 mode="BADGE"
                 badgeDotColors={["#0353A4"]}
                 containerStyle={{ zIndex: open || layersOpen ? 1 : 2 }}
@@ -399,10 +423,15 @@ export default function Account({ session }: { session: Session }) {
 }
 
 const styles = StyleSheet.create({
+  fullScreen: {
+    flex: 1, 
+    backgroundColor: "white",
+  },
   container: {
     marginTop: 60,
     padding: 12,
-    alignItems: "center", // Centers everything
+    paddingBottom: 40,
+    minHeight: '100%',
   },
   title: {
     fontSize: 28, // Bigger text for greeting
@@ -411,9 +440,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   inputContainer: {
-    width: "90%", // Makes input full width
-    alignSelf: "center",
-    alignItems: "center", // Centers everything
+    width: "100%",
+    marginBottom: 15,
+    paddingHorizontal: 10,
   },
   input: {
     borderWidth: 1, // Thin border
@@ -506,6 +535,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 15,
     marginBottom: 12,
+    alignSelf: "center",
   },
   
   locationIcon: {
@@ -524,11 +554,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  fullScreen: {
-    flex: 1, 
-    backgroundColor: "white", // Ensures modal background is clean
-  },
-  
   contentContainer: {
     flexGrow: 1,
     justifyContent: "center",
