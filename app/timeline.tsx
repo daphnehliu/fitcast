@@ -7,9 +7,10 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from "react-native";
-import GradientBackground from "@/components/GradientBackground";
+import { LinearGradient } from "expo-linear-gradient";
 import { AppText } from "@/components/AppText";
 import { useTimeline } from "@/context/TimelineContext";
+import { getGradientColors } from "@/lib/gradientUtils";
 
 const { width } = Dimensions.get("window");
 function Timeline() {
@@ -44,6 +45,18 @@ function Timeline() {
   const accessoryMap = {
     umbrella: require("../assets/images/umbrella.png"),
   };
+
+  const [gradientColors, setGradientColors] = useState(["#4DC8E7", "#B0E7F0"]);
+
+  useEffect(() => {
+    if (weatherData) {
+      const currentWeather = weatherData[0]?.weather || "";
+      const currentHour = new Date().getHours();
+      const isNight = currentHour < 6 || currentHour > 18;
+      const colors = getGradientColors(currentWeather, isNight);
+      setGradientColors(colors);
+    }
+  }, [weatherData]);
 
   function extractClothingItems(fitcastString: string) {
     console.log("fitcastString:", fitcastString);
@@ -101,9 +114,8 @@ function Timeline() {
   };
 
   return (
-    <GradientBackground
-      colors={["rgba(255, 116, 47, 0.46)", "#4D92D9"]}
-      locations={[0, 0.9]}
+    <LinearGradient
+      colors={gradientColors}
       style={{ flex: 1, justifyContent: "center" }}
     >
       <ScrollView
@@ -175,7 +187,7 @@ function Timeline() {
                           <Image
                             key={idx}
                             source={icon}
-                            style={{ height: 80, width: 80, margin: 5 }}
+                            style={{ height: 80, width: 80, margin: 5, resizeMode: 'contain' }}
                           />
                         )
                       )}
@@ -221,7 +233,7 @@ function Timeline() {
           )}
         </View>
       </ScrollView>
-    </GradientBackground>
+    </LinearGradient>
   );
 }
 

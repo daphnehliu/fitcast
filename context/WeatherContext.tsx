@@ -153,52 +153,67 @@ export const WeatherProvider = ({
     topChoices: string[],
     bottomChoices: string[]
   ): Promise<string> => {
-    try {
-      const tempDetails = `The current weather is described as "${description}". The temperature is ${temp}ºF, with a high of ${high}ºF and a low of ${low}ºF. It feels like ${feels_like}ºF and there is ${humidity} humidity.`;
-      const directions =
-        "Provide a short clothing recommendation for the weather including one element from" +
-        topChoices +
-        "one element from " +
-        bottomChoices +
-        " and any elements from " +
-        accessories +
-        " if needed. Don't give reasoning and dont add any stylistic elements. Only pick one top and one bottom. Don't mention an umbrella if it is not needed. Finish your thought in 15 or less tokens using a full sentence with proper grammar. Don't mention accessories unless they are needed";
-      const examples =
-        'Something like "Dress light with a shirt and shorts" or "Bundle up with a big jacket and long pants and carry an umbrella" is great. Use 10 or less tokens, proper grammar, and finish your thought';
-      const prompt = directions + tempDetails;
+    const makeApiCall = async (): Promise<string> => {
+      try {
+        const tempDetails = `The current weather is described as "${description}". The temperature is ${temp}ºF, with a high of ${high}ºF and a low of ${low}ºF. It feels like ${feels_like}ºF and there is ${humidity} humidity.`;
+        const directions =
+          "Provide a short clothing recommendation for the weather including one element from " +
+          topChoices.join(", ") + // Join topChoices with commas for better readability
+          ", one element from " +
+          bottomChoices.join(", ") + // Join bottomChoices with commas for better readability
+          " and any elements from " +
+          accessories.join(", ") + // Join accessories with commas for better readability
+          " if needed. Don't give reasoning and don't add any stylistic elements. Only pick one top and one bottom. Don't mention an umbrella if it is not needed. Finish your thought in 15 or less tokens using a full sentence with proper grammar. Don't mention accessories unless they are needed.";
+        const examples =
+          'Something like "Dress light with a shirt and shorts" or "Bundle up with a big jacket and long pants and carry an umbrella" is great. Use 10 or less tokens, proper grammar, and finish your thought.';
+        const prompt = directions + tempDetails;
 
-      const response = await fetch(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "system",
-                content: "You are a weather fashion assistant.",
-              },
-              { role: "user", content: prompt },
-            ],
-            max_tokens: 15,
-          }),
+        const response = await fetch(
+          "https://api.openai.com/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${OPENAI_API_KEY}`,
+            },
+            body: JSON.stringify({
+              model: "gpt-4o",
+              messages: [
+                {
+                  role: "system",
+                  content: "You are a weather fashion assistant.",
+                },
+                { role: "user", content: prompt },
+              ],
+              max_tokens: 15,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`OpenAI API error: ${response.statusText}`);
         }
-      );
 
-      const data = await response.json();
-      const fitcastLabel = data.choices[0].message.content.trim();
-      console.log(
-        "Successfully recieved fitcastLabel prompt response: ",
-        fitcastLabel
-      );
-      return fitcastLabel;
+        const data = await response.json();
+        const fitcastLabel = data.choices[0].message.content.trim();
+        console.log(
+          "Successfully received fitcastLabel prompt response: ",
+          fitcastLabel
+        );
+        return fitcastLabel;
+      } catch (error) {
+        console.error("Error fetching OpenAI response:", error);
+        throw error; // Rethrow the error to handle it in the retry logic
+      }
+    };
+
+    try {
+      // First attempt
+      return await makeApiCall();
     } catch (error) {
-      console.error("Error fetching OpenAI response:", error);
-      return "Unable to generate fitcast advice.";
+      console.log("Retrying OpenAI API call...");
+      // Retry once
+      return await makeApiCall();
     }
   };
 
