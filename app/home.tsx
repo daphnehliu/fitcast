@@ -7,36 +7,14 @@ import { Session } from "@supabase/supabase-js";
 import { useWeather } from "@/context/WeatherContext";
 import { useTimeline } from "@/context/TimelineContext";
 import { supabase } from "../lib/supabase";
-
-const getGradientColors = (
-  weatherDesc: string,
-  isNight: boolean
-): [string, string, ...string[]] => {
-  if (!weatherDesc || weatherDesc === "") return ["#4DC8E7", "#B0E7F0"];
-  if (weatherDesc.includes("Clear")) {
-    return isNight ? ["#0B1A42", "#2E4B7A"] : ["#4D92D9", "#B0E7F0"];
-  } else if (weatherDesc.includes("Cloud")) {
-    return isNight ? ["#2F3E46", "#4B6584"] : ["#B0B0B0", "#90A4AE"];
-  } else if (weatherDesc.includes("Rain") || weatherDesc.includes("Snow")) {
-    return isNight ? ["#1B262C", "#0F4C75"] : ["#A0ADB9", "#697582"];
-  } else if (weatherDesc.includes("Thunderstorm")) {
-    return ["#1F1C2C", "#928DAB"];
-  } else if (isNight) {
-    return ["#0B1A42", "#2E4B7A"];
-  }
-
-  return ["#4DC8E7", "#B0E7F0"];
-};
-
+import { getGradientColors } from "@/lib/gradientUtils";
 
 export default function Home({ session }: { session: Session }) {
   const router = useRouter();
   const { weather, isNight, weatherDesc, fitcastDescription, fitcastLabel } =
     useWeather();
   const { fitcastForecast } = useTimeline();
-  const [gradientColors, setGradientColors] = useState<
-    [string, string, ...string[]]
-  >(["#4DC8E7", "#B0E7F0"]);
+  const gradientColors = getGradientColors(weatherDesc, isNight);
   const [now, setNow] = useState<Record<string, any>>({});
   const [later, setLater] = useState<Record<string, any>>({});
   const [laterTime, setLaterTime] = useState<number>();
@@ -57,11 +35,6 @@ export default function Home({ session }: { session: Session }) {
     fetchLocation();
   }, [session]);
 
-  useEffect(() => {
-    setGradientColors(getGradientColors(weatherDesc, isNight));
-  }, [weatherDesc, isNight]);
-
-  const fitcast = require("../assets/images/fitcastWhite.png");
   const yourFitcast = require("../assets/images/your-fitcast-white.png");
 
   const topChoices = ["shirt", "light jacket", "thick jacket"];
@@ -169,15 +142,15 @@ export default function Home({ session }: { session: Session }) {
             <View style={styles.fitcastLabel}>
               <View style = {{width: "50%"}}>
                 <AppText style={styles.weatherDetailsText}>Now:</AppText>
-                <View style={{ flexDirection: "row"}}> 
-                  <View style={{ alignItems: "center", flex:1}}>
+                <View style={{ flexDirection: "row", alignItems: 'center', justifyContent: 'center', width: '100%',}}> 
+                  <View>
                     <Image source={topMap[now["top"]]} style={styles.image} />
                     <Image
                       source={bottomMap[now["bottom"]]}
                       style={styles.image}
                     />
                   </View>
-                  <View style={{flex:1, alignItems: "center", justifyContent: "center"}}>
+                  <View style={{alignItems: "center", justifyContent: "center"}}>
                   { now["accessory"] && (<Image source={accessoryMap[now["accessory"]]} style={[styles.image]} />)}
                   </View> 
                 </View>
@@ -185,15 +158,15 @@ export default function Home({ session }: { session: Session }) {
 
               <View style = {{width: "50%"}}>
                 <AppText style={styles.weatherDetailsText}>Later: {laterTime}</AppText>
-                <View style={{ flexDirection: "row"}}> 
-                  <View style={{ alignItems: "center", flex:1}}>
+                <View style={{ flexDirection: "row", alignItems: 'center', justifyContent: 'center', width: '100%',}}> 
+                  <View>
                     <Image source={topMap[later["top"]]} style={styles.image} />
                     <Image
                       source={bottomMap[later["bottom"]]}
                       style={styles.image}
                     />
                   </View>
-                  <View style={{flex:1, alignItems: "center", justifyContent: "center"}}>
+                  <View style={{alignItems: "center", justifyContent: "center"}}>
                   { later["accessory"] && (<Image source={accessoryMap[later["accessory"]]} style={[styles.image]} />)}
                   </View> 
                 </View>
@@ -262,7 +235,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   image: {
-    width: 150,
+    width: 50,
     height: 50,
     resizeMode: "contain",
   },

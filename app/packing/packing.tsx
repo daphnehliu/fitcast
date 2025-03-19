@@ -14,25 +14,8 @@ import { useRouter } from "expo-router";
 import { AppText } from "@/components/AppText";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const getGradientColors = (
-  weatherDesc: string,
-  isNight: boolean
-): [string, string, ...string[]] => {
-  if (!weatherDesc) return ["#4DC8E7", "#B0E7F0"];
-  if (weatherDesc.includes("Clear")) {
-    return isNight ? ["#0B1A42", "#2E4B7A"] : ["#4D92D9", "#B0E7F0"];
-  } else if (weatherDesc.includes("Cloud")) {
-    return isNight ? ["#2F3E46", "#4B6584"] : ["#B0B0B0", "#90A4AE"];
-  } else if (weatherDesc.includes("Rain") || weatherDesc.includes("Snow")) {
-    return isNight ? ["#1B262C", "#0F4C75"] : ["#A0ADB9", "#697582"];
-  } else if (weatherDesc.includes("Thunderstorm")) {
-    return ["#1F1C2C", "#928DAB"];
-  } else if (isNight) {
-    return ["#0B1A42", "#2E4B7A"];
-  }
-  return ["#4DC8E7", "#B0E7F0"];
-};
+import { getGradientColors } from "@/lib/gradientUtils";
+import { useWeather } from "@/context/WeatherContext";
 
 // Helper function to format a Date object to "YYYY-MM-DD" using local date values.
 const formatLocalDate = (date: Date): string => {
@@ -44,9 +27,8 @@ const formatLocalDate = (date: Date): string => {
 
 export default function PackingInput() {
   const router = useRouter();
-  const [gradientColors, setGradientColors] = useState<
-    [string, string, ...string[]]
-  >(["#4DC8E7", "#B0E7F0"]);
+  const { weather, isNight, weatherDesc } = useWeather();
+  const gradientColors = getGradientColors(weatherDesc, isNight);
   const [destination, setDestination] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -56,40 +38,7 @@ export default function PackingInput() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [weather, setWeather] = useState<any>(null);
-  const [isNight, setIsNight] = useState(false);
-  const [weatherDesc, setWeatherDesc] = useState("");
   const [fitcastDescription, setFitcastDescription] = useState("Loading...");
-
-  useEffect(() => {
-    setGradientColors(getGradientColors(weatherDesc, isNight));
-  }, [weatherDesc, isNight]);
-
-  useEffect(() => {
-    const fetchWeather = async () => {
-      try {
-        const apiKey = "f076a815a1cbbdb3f228968604fdcc7a";
-        const response = await fetch(
-          `http://api.openweathermap.org/data/2.5/weather?q=Palo%20Alto&appid=${apiKey}&units=imperial`
-        );
-        const data = await response.json();
-        setWeather(data);
-
-        const currentHour = new Date().getHours();
-        setIsNight(currentHour < 6 || currentHour > 18);
-        const formattedDesc = data.weather[0].description
-          .toLowerCase()
-          .split(" ")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" ");
-        setWeatherDesc(formattedDesc);
-      } catch (error) {
-        console.error("Error fetching weather: ", error);
-      }
-    };
-
-    fetchWeather();
-  }, []);
 
   const searchCities = async () => {
     if (searchText.length < 3) {
@@ -163,7 +112,10 @@ export default function PackingInput() {
     : new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 
   return (
-    <LinearGradient colors={["#4DC8E7", "#B0E7F0"]} style={styles.gradient}>
+    <LinearGradient
+      colors={gradientColors}
+      style={styles.gradient}
+    >
       <View style={styles.container}>
         <AppText type="title" style={styles.header}>
           Plan Your Packing

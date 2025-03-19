@@ -140,52 +140,63 @@ export const TimelineProvider = ({ children, session }: { children: ReactNode; s
     topChoices: string[],
     bottomChoices: string[]
   ): Promise<string> => {
-    try {
-      const directions =
-        `For each of the four forecasts in "${hourlyForecast}", select one clothing suggestion from` +
-        topChoices +
-        "one element from " +
-        bottomChoices +
-        " and any elements from " +
-        accessories +
-        ` if needed. Only suggest clothing items that are listed above. You must select one top and one bottom. Try to make the suggestions match the weather for that hourly forecast. Format the response simply as new lines mapping the time to the the suggested clothing items. If a jacket is suggested, no need to also list shirt.`;
+    const makeApiCall = async (): Promise<string> => {
+      try {
+        const directions =
+          `For each of the four forecasts in "${hourlyForecast}", select one clothing suggestion from` +
+          topChoices +
+          "one element from " +
+          bottomChoices +
+          " and any elements from " +
+          accessories +
+          ` if needed. Only suggest clothing items that are listed above. You must select one top and one bottom. Try to make the suggestions match the weather for that hourly forecast. Format the response simply as new lines mapping the time to the the suggested clothing items. If a jacket is suggested, no need to also list shirt.`;
 
-      const examples = "For example, '- 2:00: light jacket, shorts'";
-      const prompt = directions + examples;
+        const examples = "For example, '- 2:00: light jacket, shorts'";
+        const prompt = directions + examples;
 
-      const response = await fetch(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "system",
-                content: "You are a weather fashion assistant.",
-              },
-              { role: "user", content: prompt },
-            ],
-            max_tokens: 100,
-          }),
+        const response = await fetch(
+          "https://api.openai.com/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${OPENAI_API_KEY}`,
+            },
+            body: JSON.stringify({
+              model: "gpt-4o",
+              messages: [
+                {
+                  role: "system",
+                  content: "You are a weather fashion assistant.",
+                },
+                { role: "user", content: prompt },
+              ],
+              max_tokens: 100,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`OpenAI API error: ${response.statusText}`);
         }
-      );
 
-      const data = await response.json();
-      const fitcastForecast = data.choices[0].message.content.trim();
-      console.log("timeline fitcastForecast:", fitcastForecast);
-      console.log(
-        "Successfully recieved fitcastForecast prompt response: ",
-        fitcastForecast
-      );
-      return fitcastForecast;
+        const data = await response.json();
+        const fitcastForecast = data.choices[0].message.content.trim();
+        console.log("timeline fitcastForecast:", fitcastForecast);
+        return fitcastForecast;
+      } catch (error) {
+        console.error("Error fetching OpenAI response:", error);
+        throw error; // Rethrow the error to handle it in the retry logic
+      }
+    };
+
+    try {
+      // First attempt
+      return await makeApiCall();
     } catch (error) {
-      console.error("Error fetching OpenAI response:", error);
-      return "Unable to generate fitcast forecast.";
+      console.log("Retrying OpenAI API call...");
+      // Retry once
+      return await makeApiCall();
     }
   };
 
